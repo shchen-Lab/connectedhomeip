@@ -50,10 +50,7 @@ public:
      * @param[in] param   The argument to pass in to the handler function
      *
      */
-    void SetOwner(TransportMgrBase * owner)
-    {
-        mOwner = owner;
-    }
+    void SetOwner(TransportMgrBase * owner) { mOwner = owner; }
 
     /**
      * @brief Send a message to the specified target.
