@@ -27,6 +27,7 @@
 #include <inet/IPAddress.h>
 #include <inet/UDPEndPoint.h>
 #include <system/SystemPacketBuffer.h>
+#include <transport/TransportMgrBase.h>
 #include <transport/raw/MessageHeader.h>
 #include <transport/raw/PeerAddress.h>
 
@@ -44,18 +45,14 @@ public:
     virtual ~Base() {}
 
     /**
-     * Sets the message receive handler and associated argument
+     * Sets the owner of the transport
      *
-     * @param[in] handler The callback to call when a message is received
      * @param[in] param   The argument to pass in to the handler function
      *
      */
-    template <class T>
-    void SetMessageReceiveHandler(void (*handler)(const PacketHeader &, const PeerAddress &, System::PacketBufferHandle, T *),
-                                  T * param)
+    void SetOwner(TransportMgrBase * owner)
     {
-        mMessageReceivedArgument = param;
-        OnMessageReceived        = reinterpret_cast<MessageReceiveHandler>(handler);
+        mOwner = owner;
     }
 
     /**
@@ -89,25 +86,10 @@ protected:
      */
     void HandleMessageReceived(const PacketHeader & header, const PeerAddress & source, System::PacketBufferHandle buffer)
     {
-        if (OnMessageReceived)
-        {
-            OnMessageReceived(header, source, std::move(buffer), mMessageReceivedArgument);
-        }
+        mOwner->HandleMessageReceived(header, source, std::move(buffer));
     }
 
-    /**
-     * This function is the application callback that is invoked when a message is received over a
-     * Chip connection.
-     *
-     * @param[in]    msgBuf        A handle to the PacketBuffer object holding the message.
-     *
-     * Callback *MUST* free msgBuf as a result of handling.
-     */
-    typedef void (*MessageReceiveHandler)(const PacketHeader & header, const PeerAddress & source,
-                                          System::PacketBufferHandle msgBuf, void * param);
-
-    MessageReceiveHandler OnMessageReceived = nullptr; ///< Callback on message receiving
-    void * mMessageReceivedArgument         = nullptr; ///< Argument for callback
+    TransportMgrBase * mOwner;
 };
 
 } // namespace Transport
