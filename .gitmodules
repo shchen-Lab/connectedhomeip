@@ -287,4 +287,4 @@
 	platforms = openiotsdk
 [submodule "bouffalolab_sdk"]
 	path = third_party/bouffalolab/repo
-	url = https://git.bouffalolab.com/aqara/bl_iot_sdk_bl702l.git
+	url = https://git.bouffalolab.com/Bouffalo_BL70x/bl_iot_sdk_bl702.git
