@@ -14,6 +14,13 @@
 
 name: 74.3.1. [TC-SWTCH-3.1] Global attributes with client as DUT
 
+PICS:
+    - SWTCH.C
+    - SWTCH.C.AM-READ
+    - SWTCH.C.AO-READ
+    - SWTCH.C.AM-WRITE
+    - SWTCH.C.AO-WRITE
+
 config:
     nodeId: 0x12344321
     cluster: "Switch"
@@ -26,12 +33,12 @@ tests:
 
     - label: "Read NumberOfPositions attribute"
       wait: "readAttribute"
-      attribute: "number of positions"
+      attribute: "NumberOfPositions"
 
     - label: "Read CurrentPosition attribute"
       wait: "readAttribute"
-      attribute: "current position"
+      attribute: "CurrentPosition"
 
     - label: "Read MultiPressMax attribute"
       wait: "readAttribute"
-      attribute: "multi press max"
+      attribute: "MultiPressMax"

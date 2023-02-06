@@ -26,69 +26,6 @@ limitations under the License.
     <older spec="ha-1.2-05-3520-29" dependsOn="zcl-1.0-07-5123-03" certifiable="true"/>
     <older spec="ha-1.1-05-3520-27" dependsOn="zcl-1.0-07-5123-03" certifiable="true"/>
   </domain>
-  <global>
-    <command code="0x00" name="ReadAttributes" source="either">
-      <description>
-        Command description for ReadAttributes
-      </description>
-      <arg name="attributeIds" type="ATTRIB_ID" array="true"/>
-    </command>
-    <command code="0x01" name="ReadAttributesResponse" source="either" disableDefaultResponse="true">
-      <description>
-        Command description for ReadAttributesResponse
-      </description>
-      <arg name="readAttributeStatusRecords" type="ReadAttributeStatusRecord" array="true"/>
-    </command>
-    <command code="0x02" name="WriteAttributes" source="either">
-      <description>
-        Command description for WriteAttributes
-      </description>
-      <arg name="writeAttributeRecords" type="WriteAttributeRecord" array="true"/>
-    </command>
-    <command code="0x03" name="WriteAttributesUndivided" source="either">
-      <description>
-        Command description for WriteAttributesUndivided
-      </description>
-      <arg name="writeAttributeRecords" type="WriteAttributeRecord" array="true"/>
-    </command>
-    <command code="0x04" name="WriteAttributesResponse" source="either" disableDefaultResponse="true">
-      <description>
-        Command description for WriteAttributesResponse
-      </description>
-      <arg name="writeAttributeStatusRecords" type="WriteAttributeStatusRecord" array="true"/>
-    </command>
-    <command code="0x05" name="WriteAttributesNoResponse" source="either" disableDefaultResponse="true">
-      <description>
-        Command description for WriteAttributesNoResponse
-      </description>
-      <arg name="writeAttributeRecords" type="WriteAttributeRecord" array="true"/>
-    </command>
-    <command code="0x0B" name="DefaultResponse" source="either" disableDefaultResponse="true">
-      <description>
-        Command description for DefaultResponse
-      </description>
-      <arg name="commandId" type="INT8U"/>
-      <arg name="status" type="Status"/>
-    </command>
-    <command code="0x0E" name="ReadAttributesStructured" source="either">
-      <description>
-        Command description for ReadAttributesStructured
-      </description>
-      <arg name="readStructuredAttributeRecords" type="ReadStructuredAttributeRecord" array="true"/>
-    </command>
-    <command code="0x0F" name="WriteAttributesStructured" source="either">
-      <description>
-        Command description for WriteAttributesStructured
-      </description>
-      <arg name="writeStructuredAttributeRecords" type="WriteStructuredAttributeRecord" array="true"/>
-    </command>
-    <command code="0x10" name="WriteAttributesStructuredResponse" source="either" disableDefaultResponse="true">
-      <description>
-        Command description for WriteAttributesStructuredResponse
-      </description>
-      <arg name="writeStructuredAttributeStatusRecords" type="WriteStructuredAttributeStatusRecord" array="true"/>
-    </command>
-  </global>
   <cluster>
     <name>Groups</name>
     <domain>General</domain>
@@ -97,34 +34,34 @@ limitations under the License.
     <define>GROUPS_CLUSTER</define>
     <client init="false" tick="false">true</client>
     <server init="false" tick="false">true</server>
-    <globalAttribute side="either" code="0xFFFD" value="3"/>
+    <globalAttribute side="either" code="0xFFFD" value="4"/>
     <attribute side="server" code="0x0000" define="GROUP_NAME_SUPPORT" type="BITMAP8" min="0x00" max="0x80" writable="false" optional="false">NameSupport</attribute>
     <!-- NAME_SUPPORT -->
     <command source="client" code="0x00" name="AddGroup" response="AddGroupResponse" isFabricScoped="true" optional="false" cli="zcl groups add">
       <description>
         Command description for AddGroup
       </description>
-      <arg name="groupId" type="group_id"/>
-      <arg name="groupName" type="CHAR_STRING"/>
+      <arg name="GroupID" type="group_id"/>
+      <arg name="GroupName" type="CHAR_STRING"/>
       <access op="invoke" role="manage"/>
     </command>
     <command source="client" code="0x01" name="ViewGroup" response="ViewGroupResponse" isFabricScoped="true" optional="false" cli="zcl groups view">
       <description>
         Command description for ViewGroup
       </description>
-      <arg name="groupId" type="group_id"/>
+      <arg name="GroupID" type="group_id"/>
     </command>
     <command source="client" code="0x02" name="GetGroupMembership" response="GetGroupMembershipResponse" cliFunctionName="zclGroupsGetCommand" isFabricScoped="true" optional="false" cli="zcl groups get">
       <description>
         Command description for GetGroupMembership
       </description>
-      <arg name="groupList" type="group_id" array="true"/>
+      <arg name="GroupList" type="group_id" array="true"/>
     </command>
     <command source="client" code="0x03" name="RemoveGroup" response="RemoveGroupResponse" isFabricScoped="true" optional="false" cli="zcl groups remove">
       <description>
         Command description for RemoveGroup
       </description>
-      <arg name="groupId" type="group_id"/>
+      <arg name="GroupID" type="group_id"/>
       <access op="invoke" role="manage"/>
     </command>
     <command source="client" code="0x04" name="RemoveAllGroups" isFabricScoped="true" optional="false" cli="zcl groups rmall">
@@ -137,38 +74,38 @@ limitations under the License.
       <description>
         Command description for AddGroupIfIdentifying
       </description>
-      <arg name="groupId" type="group_id"/>
-      <arg name="groupName" type="CHAR_STRING"/>
+      <arg name="GroupID" type="group_id"/>
+      <arg name="GroupName" type="CHAR_STRING"/>
       <access op="invoke" role="manage"/>
     </command>
     <command source="server" code="0x00" name="AddGroupResponse" optional="false" disableDefaultResponse="true">
       <description>
         Command description for AddGroupResponse
       </description>
-      <arg name="status" type="ENUM8"/>
-      <arg name="groupId" type="group_id"/>
+      <arg name="Status" type="ENUM8"/>
+      <arg name="GroupID" type="group_id"/>
     </command>
     <command source="server" code="0x01" name="ViewGroupResponse" optional="false" disableDefaultResponse="true">
       <description>
         Command description for ViewGroupResponse
       </description>
-      <arg name="status" type="ENUM8"/>
-      <arg name="groupId" type="group_id"/>
-      <arg name="groupName" type="CHAR_STRING"/>
+      <arg name="Status" type="ENUM8"/>
+      <arg name="GroupID" type="group_id"/>
+      <arg name="GroupName" type="CHAR_STRING"/>
     </command>
     <command source="server" code="0x02" name="GetGroupMembershipResponse" optional="false" disableDefaultResponse="true">
       <description>
         Command description for GetGroupMembershipResponse
       </description>
-      <arg name="capacity" type="INT8U" isNullable="true"/>
-      <arg name="groupList" type="group_id" array="true"/>
+      <arg name="Capacity" type="INT8U" isNullable="true"/>
+      <arg name="GroupList" type="group_id" array="true"/>
     </command>
     <command source="server" code="0x03" name="RemoveGroupResponse" optional="false" disableDefaultResponse="true">
       <description>
         Command description for RemoveGroupResponse
       </description>
-      <arg name="status" type="ENUM8"/>
-      <arg name="groupId" type="group_id"/>
+      <arg name="Status" type="ENUM8"/>
+      <arg name="GroupID" type="group_id"/>
     </command>
   </cluster>
   <cluster>

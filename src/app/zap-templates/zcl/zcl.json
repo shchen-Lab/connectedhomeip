@@ -6,6 +6,8 @@
     "_comment": "Ensure access-control-definitions.xml is first in xmlFile array",
     "xmlFile": [
         "access-control-definitions.xml",
+        "chip-types.xml",
+        "types-silabs.xml",
         "access-control-cluster.xml",
         "account-login-cluster.xml",
         "administrator-commissioning-cluster.xml",
@@ -16,9 +18,8 @@
         "binding-cluster.xml",
         "boolean-state-cluster.xml",
         "actions-cluster.xml",
-        "bridged-device-basic.xml",
+        "bridged-device-basic-information.xml",
         "chip-ota.xml",
-        "chip-types.xml",
         "channel-cluster.xml",
         "client-monitoring-cluster.xml",
         "clusters-extensions.xml",
@@ -74,7 +75,6 @@
         "ha-devices.xml",
         "ha.xml",
         "lo-devices.xml",
-        "types.xml",
         "zll-devices.xml",
         "zll.xml"
     ],
@@ -102,7 +102,7 @@
             "TargetsPerAccessControlEntry",
             "AccessControlEntriesPerFabric"
         ],
-        "AdministratorCommissioning": [
+        "Administrator Commissioning": [
             "WindowStatus",
             "AdminFabricIndex",
             "AdminVendorId"
@@ -152,7 +152,7 @@
             "RebootCount",
             "UpTime",
             "TotalOperationalHours",
-            "BootReasons"
+            "BootReason"
         ],
         "Group Key Management": [
             "ClusterRevision",
@@ -179,7 +179,7 @@
             "cluster_error_boolean"
         ],
         "Thread Network Diagnostics": [
-            "channel",
+            "Channel",
             "RoutingRole",
             "NetworkName",
             "PanId",
@@ -187,7 +187,7 @@
             "MeshLocalPrefix",
             "OverrunCount",
             "PartitionId",
-            "weighting",
+            "Weighting",
             "DataVersion",
             "StableDataVersion",
             "LeaderRouterId",
@@ -241,11 +241,11 @@
             "OperationalDatasetComponents"
         ],
         "WiFi Network Diagnostics": [
-            "bssid",
+            "BSSID",
             "SecurityType",
             "WiFiVersion",
             "ChannelNumber",
-            "Rssi",
+            "RSSI",
             "BeaconLostCount",
             "BeaconRxCount",
             "PacketMulticastRxCount",

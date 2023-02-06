@@ -41,6 +41,7 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/ZclString.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/DeviceInstanceInfoProvider.h>
 #include <zap-generated/CHIPClusters.h>
 
 using namespace chip;
@@ -88,7 +89,7 @@ MyPincodeService gMyPincodeService;
 class MyPostCommissioningListener : public PostCommissioningListener
 {
     void CommissioningCompleted(uint16_t vendorId, uint16_t productId, NodeId nodeId, Messaging::ExchangeManager & exchangeMgr,
-                                SessionHandle & sessionHandle) override
+                                const SessionHandle & sessionHandle) override
     {
         // read current binding list
         chip::Controller::BindingCluster cluster(exchangeMgr, sessionHandle, kTargetBindingClusterEndpointId);
@@ -183,7 +184,7 @@ class MyPostCommissioningListener : public PostCommissioningListener
     }
 
     void cacheContext(uint16_t vendorId, uint16_t productId, NodeId nodeId, Messaging::ExchangeManager & exchangeMgr,
-                      SessionHandle & sessionHandle)
+                      const SessionHandle & sessionHandle)
     {
         mVendorId    = vendorId;
         mProductId   = productId;
@@ -348,17 +349,17 @@ constexpr CommandId contentLauncherIncomingCommands[] = {
     kInvalidCommandId,
 };
 constexpr CommandId contentLauncherOutgoingCommands[] = {
-    app::Clusters::ContentLauncher::Commands::LaunchResponse::Id,
+    app::Clusters::ContentLauncher::Commands::LauncherResponse::Id,
     kInvalidCommandId,
 };
 // TODO: Sort out when the optional commands here should be listed.
 constexpr CommandId mediaPlaybackIncomingCommands[] = {
-    app::Clusters::MediaPlayback::Commands::Play::Id,         app::Clusters::MediaPlayback::Commands::Pause::Id,
-    app::Clusters::MediaPlayback::Commands::StopPlayback::Id, app::Clusters::MediaPlayback::Commands::StartOver::Id,
-    app::Clusters::MediaPlayback::Commands::Previous::Id,     app::Clusters::MediaPlayback::Commands::Next::Id,
-    app::Clusters::MediaPlayback::Commands::Rewind::Id,       app::Clusters::MediaPlayback::Commands::FastForward::Id,
-    app::Clusters::MediaPlayback::Commands::SkipForward::Id,  app::Clusters::MediaPlayback::Commands::SkipBackward::Id,
-    app::Clusters::MediaPlayback::Commands::Seek::Id,         kInvalidCommandId,
+    app::Clusters::MediaPlayback::Commands::Play::Id,        app::Clusters::MediaPlayback::Commands::Pause::Id,
+    app::Clusters::MediaPlayback::Commands::Stop::Id,        app::Clusters::MediaPlayback::Commands::StartOver::Id,
+    app::Clusters::MediaPlayback::Commands::Previous::Id,    app::Clusters::MediaPlayback::Commands::Next::Id,
+    app::Clusters::MediaPlayback::Commands::Rewind::Id,      app::Clusters::MediaPlayback::Commands::FastForward::Id,
+    app::Clusters::MediaPlayback::Commands::SkipForward::Id, app::Clusters::MediaPlayback::Commands::SkipBackward::Id,
+    app::Clusters::MediaPlayback::Commands::Seek::Id,        kInvalidCommandId,
 };
 constexpr CommandId mediaPlaybackOutgoingCommands[] = {
     app::Clusters::MediaPlayback::Commands::PlaybackResponse::Id,
@@ -502,6 +503,20 @@ std::list<ClusterId> ContentAppFactoryImpl::GetAllowedClusterListForStaticEndpoi
 {
     if (endpointId == kLocalVideoPlayerEndpointId)
     {
+        if (GetVendorPrivilege(vendorId) == Access::Privilege::kAdminister)
+        {
+            ChipLogProgress(DeviceLayer,
+                            "ContentAppFactoryImpl GetAllowedClusterListForStaticEndpoint priviledged vendor accessible clusters "
+                            "being returned.");
+            return { chip::app::Clusters::Descriptor::Id,         chip::app::Clusters::OnOff::Id,
+                     chip::app::Clusters::WakeOnLan::Id,          chip::app::Clusters::MediaPlayback::Id,
+                     chip::app::Clusters::LowPower::Id,           chip::app::Clusters::KeypadInput::Id,
+                     chip::app::Clusters::ContentLauncher::Id,    chip::app::Clusters::AudioOutput::Id,
+                     chip::app::Clusters::ApplicationLauncher::Id };
+        }
+        ChipLogProgress(
+            DeviceLayer,
+            "ContentAppFactoryImpl GetAllowedClusterListForStaticEndpoint operator vendor accessible clusters being returned.");
         return { chip::app::Clusters::Descriptor::Id,      chip::app::Clusters::OnOff::Id,
                  chip::app::Clusters::WakeOnLan::Id,       chip::app::Clusters::MediaPlayback::Id,
                  chip::app::Clusters::LowPower::Id,        chip::app::Clusters::KeypadInput::Id,
@@ -520,6 +535,15 @@ CHIP_ERROR InitVideoPlayerPlatform()
 #if CHIP_DEVICE_CONFIG_APP_PLATFORM_ENABLED
     ContentAppPlatform::GetInstance().SetupAppPlatform();
     ContentAppPlatform::GetInstance().SetContentAppFactory(&gFactory);
+    uint16_t value;
+    if (DeviceLayer::GetDeviceInstanceInfoProvider()->GetVendorId(value) != CHIP_NO_ERROR)
+    {
+        ChipLogDetail(Discovery, "AppImpl InitVideoPlayerPlatform Vendor ID not known");
+    }
+    else
+    {
+        gFactory.AddAdminVendorId(value);
+    }
 #endif // CHIP_DEVICE_CONFIG_APP_PLATFORM_ENABLED
 
 #if CHIP_DEVICE_CONFIG_ENABLE_BOTH_COMMISSIONER_AND_COMMISSIONEE

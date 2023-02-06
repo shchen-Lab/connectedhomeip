@@ -91,7 +91,8 @@ if (chip_enable_wifi) {
 
 # ThunderBoards, Explorer Kit and MGM240L do not support LCD (No LCD)
 if (silabs_board == "BRD4166A" || silabs_board == "BRD2601B" ||
-    silabs_board == "BRD2703A" || silabs_board == "BRD4319A") {
+    silabs_board == "BRD2703A" || silabs_board == "BRD4319A" ||
+    silabs_board == "BRD2704A") {
   show_qr_code = false
   disable_lcd = true
 }
@@ -100,11 +101,6 @@ defines = []
 
 # WiFi settings
 if (chip_enable_wifi) {
-  # disabling LCD for MG24 for wifi
-  if (silabs_board == "BRD4186A" || silabs_board == "BRD4187A") {
-    show_qr_code = false
-    disable_lcd = true
-  }
   if (chip_default_wifi_ssid != "") {
     defines += [
       "CHIP_ONNETWORK_PAIRING=1",
@@ -212,6 +208,10 @@ efr32_executable("lighting_app") {
   public_configs = [ "${efr32_sdk_build_root}:silabs_config" ]
   include_dirs = [ "include" ]
   defines = []
+
+  if (silabs_board == "BRD2704A") {
+    defines += [ "SL_STATUS_LED=0" ]
+  }
 
   sources = [
     "${examples_common_plat_dir}/heap_4_silabs.c",

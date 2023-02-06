@@ -50,6 +50,12 @@ __pycache__
 # Doxygen outputs
 docs/html
 
+# Python venv
+.venv
+
+# Documentation
+docs/_build
+
 # VSCode java extensions
 .project
 
@@ -65,3 +71,6 @@ compile_commands.json
 # log files
 *.log
 examples/thermostat/ameba/build
+
+# Downloaded zap without a pigweed root (via zap_download.py)
+.zap

@@ -72,6 +72,10 @@ CommissioningParameters PairingCommand::GetCommissioningParameters()
 {
     auto params = CommissioningParameters();
     params.SetSkipCommissioningComplete(mSkipCommissioningComplete.ValueOr(false));
+    if (mBypassAttestationVerifier.ValueOr(false))
+    {
+        params.SetDeviceAttestationDelegate(this);
+    }
 
     switch (mNetworkType)
     {
@@ -161,9 +165,8 @@ CHIP_ERROR PairingCommand::PairWithMdns(NodeId remoteId)
 
 CHIP_ERROR PairingCommand::Unpair(NodeId remoteId)
 {
-    CHIP_ERROR err = CurrentCommissioner().UnpairDevice(remoteId);
-    SetCommandExitStatus(err);
-    return err;
+    mCurrentFabricRemover = Platform::MakeUnique<Controller::CurrentFabricRemover>(&CurrentCommissioner());
+    return mCurrentFabricRemover->RemoveCurrentFabric(remoteId, &mCurrentFabricRemoveCallback);
 }
 
 void PairingCommand::OnStatusUpdate(DevicePairingDelegate::Status status)
@@ -264,4 +267,37 @@ void PairingCommand::OnDiscoveredDevice(const chip::Dnssd::DiscoveredNodeData & 
     {
         SetCommandExitStatus(err);
     }
+}
+
+void PairingCommand::OnCurrentFabricRemove(void * context, NodeId nodeId, CHIP_ERROR err)
+{
+    PairingCommand * command = reinterpret_cast<PairingCommand *>(context);
+    VerifyOrReturn(command != nullptr, ChipLogError(chipTool, "OnCurrentFabricRemove: context is null"));
+
+    if (err == CHIP_NO_ERROR)
+    {
+        ChipLogProgress(chipTool, "Device unpair completed with success: " ChipLogFormatX64, ChipLogValueX64(nodeId));
+    }
+    else
+    {
+        ChipLogProgress(chipTool, "Device unpair Failure: " ChipLogFormatX64 " %s", ChipLogValueX64(nodeId), ErrorStr(err));
+    }
+
+    command->SetCommandExitStatus(err);
+}
+
+chip::Optional<uint16_t> PairingCommand::FailSafeExpiryTimeoutSecs() const
+{
+    // We don't need to set additional failsafe timeout as we don't ask the final user if he wants to continue
+    return chip::Optional<uint16_t>();
+}
+
+void PairingCommand::OnDeviceAttestationCompleted(chip::Controller::DeviceCommissioner * deviceCommissioner,
+                                                  chip::DeviceProxy * device,
+                                                  const chip::Credentials::DeviceAttestationVerifier::AttestationDeviceInfo & info,
+                                                  chip::Credentials::AttestationVerificationResult attestationResult)
+{
+    // Bypass attestation verification, continue with success
+    deviceCommissioner->ContinueCommissioningAfterDeviceAttestation(device,
+                                                                    chip::Credentials::AttestationVerificationResult::kSuccess);
 }

@@ -47,17 +47,11 @@ CHIP_ERROR ThreadStackManagerImpl::_InitThreadStack(void)
 CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
-    otRadio_opt_t opt;
-    
-    opt.byte = 0;
-    opt.bf.isCoexEnable = true;
 
-    ot_alarmInit();
-    ot_radioInit(opt);
     // Initialize the generic implementation base classes.
     err = GenericThreadStackManagerImpl_FreeRTOS<ThreadStackManagerImpl>::DoInit();
     SuccessOrExit(err);
-    err = GenericThreadStackManagerImpl_OpenThread_LwIP<ThreadStackManagerImpl>::DoInit(otInst);
+    err = GenericThreadStackManagerImpl_OpenThread_LwIP<ThreadStackManagerImpl>::DoInit(otInstanceInitSingle());
     SuccessOrExit(err);
 
     mbedtls_platform_set_calloc_free(pvPortCalloc, vPortFree);
@@ -119,42 +113,46 @@ extern "C" void otPlatFree(void * aPtr)
     free(aPtr);
 }
 
-extern "C" uint32_t otrEnterCrit(void) 
+extern "C" uint32_t otrEnterCrit(void)
 {
-    if (xPortIsInsideInterrupt()) {
+    if (xPortIsInsideInterrupt())
+    {
         return taskENTER_CRITICAL_FROM_ISR();
     }
-    else {
+    else
+    {
         taskENTER_CRITICAL();
         return 0;
     }
 }
 
-extern "C" void otrExitCrit(uint32_t tag) 
+extern "C" void otrExitCrit(uint32_t tag)
 {
-    if (xPortIsInsideInterrupt()) {
+    if (xPortIsInsideInterrupt())
+    {
         taskEXIT_CRITICAL_FROM_ISR(tag);
     }
-    else {
+    else
+    {
         taskEXIT_CRITICAL();
     }
 }
 
-extern "C" ot_system_event_t otrGetNotifyEvent(void) 
+extern "C" ot_system_event_t otrGetNotifyEvent(void)
 {
     ot_system_event_t sevent = OT_SYSTEM_EVENT_NONE;
 
     taskENTER_CRITICAL();
-    sevent = ot_system_event_var;
+    sevent              = ot_system_event_var;
     ot_system_event_var = OT_SYSTEM_EVENT_NONE;
     taskEXIT_CRITICAL();
 
     return sevent;
 }
 
-extern "C" void otrNotifyEvent(ot_system_event_t sevent) 
+extern "C" void otrNotifyEvent(ot_system_event_t sevent)
 {
-    uint32_t tag = otrEnterCrit();
+    uint32_t tag        = otrEnterCrit();
     ot_system_event_var = (ot_system_event_t)(ot_system_event_var | sevent);
     otrExitCrit(tag);
 

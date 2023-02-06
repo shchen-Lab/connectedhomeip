@@ -44,9 +44,11 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/ZclString.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/DeviceInstanceInfoProvider.h>
 
 using namespace chip;
 using namespace chip::AppPlatform;
+using namespace chip::DeviceLayer;
 
 #if CHIP_DEVICE_CONFIG_APP_PLATFORM_ENABLED
 ContentAppFactoryImpl gFactory;
@@ -189,17 +191,17 @@ constexpr CommandId contentLauncherIncomingCommands[] = {
     kInvalidCommandId,
 };
 constexpr CommandId contentLauncherOutgoingCommands[] = {
-    app::Clusters::ContentLauncher::Commands::LaunchResponse::Id,
+    app::Clusters::ContentLauncher::Commands::LauncherResponse::Id,
     kInvalidCommandId,
 };
 // TODO: Sort out when the optional commands here should be listed.
 constexpr CommandId mediaPlaybackIncomingCommands[] = {
-    app::Clusters::MediaPlayback::Commands::Play::Id,         app::Clusters::MediaPlayback::Commands::Pause::Id,
-    app::Clusters::MediaPlayback::Commands::StopPlayback::Id, app::Clusters::MediaPlayback::Commands::StartOver::Id,
-    app::Clusters::MediaPlayback::Commands::Previous::Id,     app::Clusters::MediaPlayback::Commands::Next::Id,
-    app::Clusters::MediaPlayback::Commands::Rewind::Id,       app::Clusters::MediaPlayback::Commands::FastForward::Id,
-    app::Clusters::MediaPlayback::Commands::SkipForward::Id,  app::Clusters::MediaPlayback::Commands::SkipBackward::Id,
-    app::Clusters::MediaPlayback::Commands::Seek::Id,         kInvalidCommandId,
+    app::Clusters::MediaPlayback::Commands::Play::Id,        app::Clusters::MediaPlayback::Commands::Pause::Id,
+    app::Clusters::MediaPlayback::Commands::Stop::Id,        app::Clusters::MediaPlayback::Commands::StartOver::Id,
+    app::Clusters::MediaPlayback::Commands::Previous::Id,    app::Clusters::MediaPlayback::Commands::Next::Id,
+    app::Clusters::MediaPlayback::Commands::Rewind::Id,      app::Clusters::MediaPlayback::Commands::FastForward::Id,
+    app::Clusters::MediaPlayback::Commands::SkipForward::Id, app::Clusters::MediaPlayback::Commands::SkipBackward::Id,
+    app::Clusters::MediaPlayback::Commands::Seek::Id,        kInvalidCommandId,
 };
 constexpr CommandId mediaPlaybackOutgoingCommands[] = {
     app::Clusters::MediaPlayback::Commands::PlaybackResponse::Id,
@@ -266,6 +268,11 @@ void ContentAppFactoryImpl::setContentAppAttributeDelegate(ContentAppAttributeDe
     mAttributeDelegate = attributeDelegate;
 }
 
+void ContentAppFactoryImpl::setContentAppCommandDelegate(ContentAppCommandDelegate * commandDelegate)
+{
+    mCommandDelegate = commandDelegate;
+}
+
 CHIP_ERROR ContentAppFactoryImpl::LookupCatalogVendorApp(uint16_t vendorId, uint16_t productId, CatalogVendorApp * destinationApp)
 {
     std::string appId               = BuildAppId(vendorId);
@@ -329,9 +336,9 @@ EndpointId ContentAppFactoryImpl::AddContentApp(const char * szVendorName, uint1
                                                 uint16_t productId, const char * szApplicationVersion, jobject manager)
 {
     DataVersion * dataVersionBuf = new DataVersion[ArraySize(contentAppClusters)];
-    ContentAppImpl * app         = new ContentAppImpl(szVendorName, vendorId, szApplicationName, productId, szApplicationVersion,
-                                              "20202021", mAttributeDelegate);
-    EndpointId epId              = ContentAppPlatform::GetInstance().AddContentApp(
+    ContentAppImpl * app = new ContentAppImpl(szVendorName, vendorId, szApplicationName, productId, szApplicationVersion, "",
+                                              mAttributeDelegate, mCommandDelegate);
+    EndpointId epId      = ContentAppPlatform::GetInstance().AddContentApp(
         app, &contentAppEndpoint, Span<DataVersion>(dataVersionBuf, ArraySize(contentAppClusters)),
         Span<const EmberAfDeviceType>(gContentAppDeviceType));
     ChipLogProgress(DeviceLayer, "ContentAppFactoryImpl AddContentApp endpoint returned %d. Endpoint set %d", epId,
@@ -346,9 +353,9 @@ EndpointId ContentAppFactoryImpl::AddContentApp(const char * szVendorName, uint1
                                                 EndpointId desiredEndpointId)
 {
     DataVersion * dataVersionBuf = new DataVersion[ArraySize(contentAppClusters)];
-    ContentAppImpl * app         = new ContentAppImpl(szVendorName, vendorId, szApplicationName, productId, szApplicationVersion,
-                                              "20202021", mAttributeDelegate);
-    EndpointId epId              = ContentAppPlatform::GetInstance().AddContentApp(
+    ContentAppImpl * app = new ContentAppImpl(szVendorName, vendorId, szApplicationName, productId, szApplicationVersion, "",
+                                              mAttributeDelegate, mCommandDelegate);
+    EndpointId epId      = ContentAppPlatform::GetInstance().AddContentApp(
         app, &contentAppEndpoint, Span<DataVersion>(dataVersionBuf, ArraySize(contentAppClusters)),
         Span<const EmberAfDeviceType>(gContentAppDeviceType), desiredEndpointId);
     ChipLogProgress(DeviceLayer, "ContentAppFactoryImpl AddContentApp endpoint returned %d. Endpoint set %d", epId,
@@ -407,6 +414,20 @@ std::list<ClusterId> ContentAppFactoryImpl::GetAllowedClusterListForStaticEndpoi
 {
     if (endpointId == kLocalVideoPlayerEndpointId)
     {
+        if (GetVendorPrivilege(vendorId) == Access::Privilege::kAdminister)
+        {
+            ChipLogProgress(DeviceLayer,
+                            "ContentAppFactoryImpl GetAllowedClusterListForStaticEndpoint priviledged vendor accessible clusters "
+                            "being returned.");
+            return { chip::app::Clusters::Descriptor::Id,         chip::app::Clusters::OnOff::Id,
+                     chip::app::Clusters::WakeOnLan::Id,          chip::app::Clusters::MediaPlayback::Id,
+                     chip::app::Clusters::LowPower::Id,           chip::app::Clusters::KeypadInput::Id,
+                     chip::app::Clusters::ContentLauncher::Id,    chip::app::Clusters::AudioOutput::Id,
+                     chip::app::Clusters::ApplicationLauncher::Id };
+        }
+        ChipLogProgress(
+            DeviceLayer,
+            "ContentAppFactoryImpl GetAllowedClusterListForStaticEndpoint operator vendor accessible clusters being returned.");
         return { chip::app::Clusters::Descriptor::Id,      chip::app::Clusters::OnOff::Id,
                  chip::app::Clusters::WakeOnLan::Id,       chip::app::Clusters::MediaPlayback::Id,
                  chip::app::Clusters::LowPower::Id,        chip::app::Clusters::KeypadInput::Id,
@@ -426,6 +447,7 @@ CHIP_ERROR InitVideoPlayerPlatform(jobject contentAppEndpointManager)
     ContentAppPlatform::GetInstance().SetupAppPlatform();
     ContentAppPlatform::GetInstance().SetContentAppFactory(&gFactory);
     gFactory.setContentAppAttributeDelegate(new ContentAppAttributeDelegate(contentAppEndpointManager));
+    gFactory.setContentAppCommandDelegate(new ContentAppCommandDelegate(contentAppEndpointManager));
 
     ChipLogProgress(AppServer, "Starting registration of command handler delegates");
     for (size_t i = 0; i < ArraySize(contentAppClusters); i++)
@@ -477,4 +499,17 @@ EndpointId RemoveContentApp(EndpointId epId)
 void ReportAttributeChange(EndpointId epId, chip::ClusterId clusterId, chip::AttributeId attributeId)
 {
     MatterReportingAttributeChangeCallback(epId, clusterId, attributeId);
+}
+
+void AddSelfVendorAsAdmin()
+{
+    uint16_t value;
+    if (DeviceLayer::GetDeviceInstanceInfoProvider()->GetVendorId(value) != CHIP_NO_ERROR)
+    {
+        ChipLogDetail(Discovery, "AppImpl addSelfVendorAsAdmin Vendor ID not known");
+    }
+    else
+    {
+        gFactory.AddAdminVendorId(value);
+    }
 }

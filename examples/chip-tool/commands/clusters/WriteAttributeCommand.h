@@ -109,6 +109,8 @@ public:
         CHIP_ERROR error = status.ToChipError();
         if (CHIP_NO_ERROR != error)
         {
+            ReturnOnFailure(RemoteDataModelLogger::LogErrorAsJSON(path, status));
+
             ChipLogError(chipTool, "Response Failure: %s", chip::ErrorStr(error));
             mError = error;
         }
@@ -116,6 +118,8 @@ public:
 
     void OnError(const chip::app::WriteClient * client, CHIP_ERROR error) override
     {
+        ReturnOnFailure(RemoteDataModelLogger::LogErrorAsJSON(error));
+
         ChipLogProgress(chipTool, "Error: %s", chip::ErrorStr(error));
         mError = error;
     }
@@ -129,9 +133,7 @@ public:
     CHIP_ERROR SendCommand(chip::DeviceProxy * device, std::vector<chip::EndpointId> endpointIds,
                            std::vector<chip::ClusterId> clusterIds, std::vector<chip::AttributeId> attributeIds, const T & values)
     {
-        return InteractionModelWriter::WriteAttribute(device, endpointIds, clusterIds, attributeIds, values,
-                                                      mTimedInteractionTimeoutMs, mSuppressResponse, mDataVersions, mRepeatCount,
-                                                      mRepeatDelayInMs);
+        return InteractionModelWriter::WriteAttribute(device, endpointIds, clusterIds, attributeIds, values);
     }
 
     CHIP_ERROR SendGroupCommand(chip::GroupId groupId, chip::FabricIndex fabricIndex, std::vector<chip::ClusterId> clusterIds,
@@ -230,6 +232,8 @@ protected:
         AddArgument("timedInteractionTimeoutMs", 0, UINT16_MAX, &mTimedInteractionTimeoutMs,
                     "If provided, do a timed write with the given timed interaction timeout. See \"7.6.10. Timed Interaction\" in "
                     "the Matter specification.");
+        AddArgument("busyWaitForMs", 0, UINT16_MAX, &mBusyWaitForMs,
+                    "If provided, block the main thread processing for the given time right after sending a command.");
         AddArgument("data-version", 0, UINT32_MAX, &mDataVersions,
                     "Comma-separated list of data versions for the clusters being written.");
         AddArgument("suppressResponse", 0, 1, &mSuppressResponse);
@@ -249,12 +253,6 @@ private:
     std::vector<chip::AttributeId> mAttributeIds;
 
     CHIP_ERROR mError = CHIP_NO_ERROR;
-    chip::Optional<uint16_t> mTimedInteractionTimeoutMs;
-    chip::Optional<std::vector<chip::DataVersion>> mDataVersions;
-    chip::Optional<bool> mSuppressResponse;
-    chip::Optional<uint16_t> mRepeatCount;
-    chip::Optional<uint16_t> mRepeatDelayInMs;
-
     T mAttributeValues;
 };
 
