@@ -477,7 +477,7 @@ def BuildBouffalolabTarget():
         TargetPart('XT-ZB6-DevKit', board=BouffalolabBoard.XT_ZB6_DevKit, module_type="BL706C-22"),
         TargetPart('BL706-IoT-DVK', board=BouffalolabBoard.BL706_IoT_DVK, module_type="BL706C-22"),
         TargetPart('BL706-NIGHT-LIGHT', board=BouffalolabBoard.BL706_NIGHT_LIGHT, module_type="BL702"),
-        TargetPart('BL704L-EVB', board=BouffalolabBoard.BL704L_EVB, module_type="BL704L"),
+        TargetPart('BL704L-DVK', board=BouffalolabBoard.BL704L_DVK, module_type="BL704L"),
     ])
 
     # Apps
