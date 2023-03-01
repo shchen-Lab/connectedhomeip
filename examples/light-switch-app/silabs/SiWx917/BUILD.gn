@@ -49,20 +49,17 @@ declare_args() {
   OTA_periodic_query_timeout = 86400
 
   # Wifi related stuff - they are overridden by gn -args="use_wf200=true"
-  use_wf200 = false
-  use_rs911x = false
-  use_rs911x_sockets = false
   sl_wfx_config_softap = false
   sl_wfx_config_scan = true
-
-  # Disable LCD on supported devices
-  disable_lcd = true
 
   # Argument to Disable IPv4 for wifi(rs911)
   chip_enable_wifi_ipv4 = false
 
   # Argument to force enable WPA3 security
   rs91x_wpa3_only = false
+
+  # use commissionable data for SiWx917
+  siwx917_commissionable_data = false
 
   #default WiFi SSID
   chip_default_wifi_ssid = ""
@@ -71,20 +68,12 @@ declare_args() {
   chip_default_wifi_psk = ""
 }
 
-declare_args() {
-  # Enables LCD Qr Code on supported devices
-  show_qr_code = !disable_lcd
-}
-
-# qr code cannot be true if lcd is disabled
-assert(!(disable_lcd && show_qr_code))
-
 # Sanity check
 assert(!(chip_enable_wifi && chip_enable_openthread))
-assert(!(use_rs911x && chip_enable_openthread))
+assert(!(use_SiWx917 && chip_enable_openthread))
 assert(!(use_wf200 && chip_enable_openthread))
 if (chip_enable_wifi) {
-  assert(use_rs911x || use_wf200)
+  assert(use_SiWx917 || use_wf200)
   enable_openthread_cli = false
   import("${chip_root}/src/platform/silabs/SiWx917/wifi_args.gni")
 }
@@ -97,6 +86,10 @@ if (silabs_board == "BRD4166A" || silabs_board == "BRD2601B" ||
 }
 
 defines = []
+
+if (siwx917_commissionable_data) {
+  defines += [ "SIWX917_USE_COMISSIONABLE_DATA=1" ]
+}
 
 # WiFi settings
 if (chip_enable_wifi) {
@@ -136,7 +129,6 @@ if (chip_enable_wifi) {
     efr32_lwip_defs += [ "LWIP_IPV6=0" ]
   }
 
-  wiseconnect_sdk_root = "${chip_root}/third_party/silabs/wisemcu-wifi-bt-sdk"
   import("${examples_plat_dir}/SiWx917/rs911x.gni")
 }
 
@@ -147,6 +139,7 @@ efr32_sdk("sdk") {
   ]
 
   include_dirs = [
+    "${chip_root}/examples/light-switch-app/silabs/common",
     "${chip_root}/src/platform/silabs/SiWx917",
     "${efr32_project_dir}/include",
     "${examples_plat_dir}",
@@ -168,7 +161,7 @@ efr32_sdk("sdk") {
 
   # WiFi Settings
   if (chip_enable_wifi) {
-    if (use_rs911x) {
+    if (use_SiWx917) {
       defines += rs911x_defs
       include_dirs += rs911x_plat_incs
     } else if (use_wf200) {
@@ -200,6 +193,8 @@ efr32_executable("light_switch_app") {
   defines = []
 
   sources = [
+    "${chip_root}/examples/light-switch-app/silabs/common/BindingHandler.cpp",
+    "${chip_root}/examples/light-switch-app/silabs/common/LightSwitchMgr.cpp",
     "${examples_common_plat_dir}/heap_4_silabs.c",
     "${examples_plat_dir}/BaseApplication.cpp",
     "${examples_plat_dir}/init_ccpPlatform.cpp",
@@ -207,16 +202,15 @@ efr32_executable("light_switch_app") {
     "${examples_plat_dir}/siwx917_utils.cpp",
     "src/AppTask.cpp",
     "src/ZclCallbacks.cpp",
-    "src/binding-handler.cpp",
     "src/main.cpp",
   ]
 
   if (use_wstk_leds) {
-    #sources += [ "${examples_plat_dir}/LEDWidget.cpp" ]
+    sources += [ "${examples_plat_dir}/LEDWidget.cpp" ]
   }
 
   if (chip_enable_pw_rpc || chip_build_libshell || enable_openthread_cli ||
-      use_wf200 || use_rs911x) {
+      use_wf200 || use_SiWx917) {
     #sources += [ "${examples_plat_dir}/uart.cpp" ]
   }
 
@@ -227,6 +221,12 @@ efr32_executable("light_switch_app") {
     "${chip_root}/src/lib",
     "${chip_root}/src/setup_payload",
   ]
+
+  if (chip_build_libshell) {
+    sources += [
+      "${chip_root}/examples/light-switch-app/silabs/common/ShellCommands.cpp",
+    ]
+  }
 
   # Attestation Credentials
   if (chip_build_platform_attestation_credentials_provider) {
@@ -240,7 +240,7 @@ efr32_executable("light_switch_app") {
 
   # WiFi Settings
   if (chip_enable_wifi) {
-    if (use_rs911x) {
+    if (use_SiWx917) {
       sources += rs911x_src_plat
 
       # All the stuff from wiseconnect

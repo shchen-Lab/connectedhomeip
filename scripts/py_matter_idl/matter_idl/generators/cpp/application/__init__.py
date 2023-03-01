@@ -12,15 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from matter_idl.generators import CodeGenerator, GeneratorStorage
-from matter_idl.matter_idl_types import Idl, ClusterSide, Field, Attribute, Cluster, FieldQuality, Command, DataType
-from matter_idl import matter_idl_types
-from matter_idl.generators.types import ParseDataType, BasicString, BasicInteger, FundamentalType, IdlType, IdlEnumType, IdlBitmapType, TypeLookupContext
-from typing import Union, List, Set
-from stringcase import capitalcase
+from typing import List
 
-import enum
-import logging
+from matter_idl.generators import CodeGenerator, GeneratorStorage
+from matter_idl.matter_idl_types import Cluster, ClusterSide, Idl
 
 
 def serverClustersOnly(clusters: List[Cluster]) -> List[Cluster]:
@@ -32,7 +27,7 @@ class CppApplicationGenerator(CodeGenerator):
     Generation of cpp code for application implementation for matter.
     """
 
-    def __init__(self, storage: GeneratorStorage, idl: Idl):
+    def __init__(self, storage: GeneratorStorage, idl: Idl, **kargs):
         """
         Inintialization is specific for java generation and will add
         filters as required by the java .jinja templates to function.

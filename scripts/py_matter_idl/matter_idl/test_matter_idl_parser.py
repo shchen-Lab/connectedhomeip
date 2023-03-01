@@ -16,15 +16,20 @@
 
 try:
     from .matter_idl_parser import CreateParser
-    from .matter_idl_types import *
-except:
+    from .matter_idl_types import (AccessPrivilege, Attribute, AttributeInstantiation, AttributeQuality, AttributeStorage, Bitmap,
+                                   Cluster, ClusterSide, Command, CommandQuality, ConstantEntry, DataType, DeviceType, Endpoint,
+                                   Enum, Event, EventPriority, EventQuality, Field, FieldQuality, Idl, ParseMetaData,
+                                   ServerClusterInstantiation, Struct, StructQuality, StructTag)
+except ImportError:
     import os
     import sys
     sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
     from matter_idl_parser import CreateParser
-    from matter_idl_types import *
-
+    from matter_idl_types import (AccessPrivilege, Attribute, AttributeInstantiation, AttributeQuality, AttributeStorage, Bitmap,
+                                  Cluster, ClusterSide, Command, CommandQuality, ConstantEntry, DataType, DeviceType, Endpoint,
+                                  Enum, Event, EventPriority, EventQuality, Field, FieldQuality, Idl, ParseMetaData,
+                                  ServerClusterInstantiation, Struct, StructQuality, StructTag)
 import unittest
 
 
@@ -506,6 +511,36 @@ server cluster A = 1 { /* Test comment */ }
             Endpoint(number=10),
             Endpoint(number=100),
         ])
+        self.assertEqual(actual, expected)
+
+    def test_emits_events(self):
+        actual = parseText("""
+            endpoint 1 {
+                server cluster Example {}
+            }
+            endpoint 2 {
+              server cluster Example {
+                emits event FooBar;
+                emits event SomeNewEvent;
+              }
+              server cluster AnotherExample {
+                emits event StartUp;
+                emits event ShutDown;
+              }
+            }
+        """)
+
+        expected = Idl(endpoints=[
+            Endpoint(number=1, server_clusters=[
+                     ServerClusterInstantiation(name="Example")]),
+            Endpoint(number=2, server_clusters=[
+                ServerClusterInstantiation(name="Example", events_emitted={
+                                           "FooBar", "SomeNewEvent"}),
+                ServerClusterInstantiation(name="AnotherExample", events_emitted={
+                    "StartUp", "ShutDown"}),
+            ])
+        ])
+
         self.assertEqual(actual, expected)
 
 

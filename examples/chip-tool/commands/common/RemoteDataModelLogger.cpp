@@ -18,6 +18,7 @@
 
 #include "RemoteDataModelLogger.h"
 
+#include <lib/support/SafeInt.h>
 #include <lib/support/jsontlv/TlvJson.h>
 
 constexpr const char * kClusterIdKey      = "clusterId";
@@ -27,6 +28,8 @@ constexpr const char * kEventIdKey        = "eventId";
 constexpr const char * kCommandIdKey      = "commandId";
 constexpr const char * kErrorIdKey        = "error";
 constexpr const char * kClusterErrorIdKey = "clusterError";
+constexpr const char * kValueKey          = "value";
+constexpr const char * kNodeIdKey         = "nodeId";
 
 namespace {
 RemoteDataModelLoggerDelegate * gDelegate;
@@ -142,10 +145,79 @@ CHIP_ERROR LogErrorAsJSON(const chip::app::EventHeader & header, const chip::app
 
 CHIP_ERROR LogErrorAsJSON(const CHIP_ERROR & error)
 {
+    VerifyOrReturnError(gDelegate != nullptr, CHIP_NO_ERROR);
+
     Json::Value value;
     chip::app::StatusIB status;
     status.InitFromChipError(error);
     return LogError(value, status);
+}
+
+CHIP_ERROR LogGetCommissionerNodeId(chip::NodeId value)
+{
+    VerifyOrReturnError(gDelegate != nullptr, CHIP_NO_ERROR);
+
+    Json::Value rootValue;
+    rootValue[kValueKey]             = Json::Value();
+    rootValue[kValueKey][kNodeIdKey] = value;
+
+    auto valueStr = chip::JsonToString(rootValue);
+    return gDelegate->LogJSON(valueStr.c_str());
+}
+
+CHIP_ERROR LogDiscoveredNodeData(const chip::Dnssd::DiscoveredNodeData & nodeData)
+{
+    VerifyOrReturnError(gDelegate != nullptr, CHIP_NO_ERROR);
+
+    if (!chip::CanCastTo<uint8_t>(nodeData.resolutionData.numIPs))
+    {
+        ChipLogError(chipTool, "Too many ips.");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (!chip::CanCastTo<uint64_t>(nodeData.commissionData.rotatingIdLen))
+    {
+        ChipLogError(chipTool, "Can not convert rotatingId to json format.");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+
+    char rotatingId[chip::Dnssd::kMaxRotatingIdLen * 2 + 1] = "";
+    chip::Encoding::BytesToUppercaseHexString(nodeData.commissionData.rotatingId, nodeData.commissionData.rotatingIdLen, rotatingId,
+                                              sizeof(rotatingId));
+
+    Json::Value value;
+    value["hostName"]           = nodeData.resolutionData.hostName;
+    value["instanceName"]       = nodeData.commissionData.instanceName;
+    value["longDiscriminator"]  = nodeData.commissionData.longDiscriminator;
+    value["shortDiscriminator"] = ((nodeData.commissionData.longDiscriminator >> 8) & 0x0F);
+    value["vendorId"]           = nodeData.commissionData.vendorId;
+    value["productId"]          = nodeData.commissionData.productId;
+    value["commissioningMode"]  = nodeData.commissionData.commissioningMode;
+    value["deviceType"]         = nodeData.commissionData.deviceType;
+    value["deviceName"]         = nodeData.commissionData.deviceName;
+    value["rotatingId"]         = rotatingId;
+    value["rotatingIdLen"]      = static_cast<uint64_t>(nodeData.commissionData.rotatingIdLen);
+    value["pairingHint"]        = nodeData.commissionData.pairingHint;
+    value["pairingInstruction"] = nodeData.commissionData.pairingInstruction;
+    value["supportsTcp"]        = nodeData.resolutionData.supportsTcp;
+    value["port"]               = nodeData.resolutionData.port;
+    value["numIPs"]             = static_cast<uint8_t>(nodeData.resolutionData.numIPs);
+
+    if (nodeData.resolutionData.mrpRetryIntervalIdle.HasValue())
+    {
+        value["mrpRetryIntervalIdle"] = nodeData.resolutionData.mrpRetryIntervalIdle.Value().count();
+    }
+
+    if (nodeData.resolutionData.mrpRetryIntervalActive.HasValue())
+    {
+        value["mrpRetryIntervalActive"] = nodeData.resolutionData.mrpRetryIntervalActive.Value().count();
+    }
+
+    Json::Value rootValue;
+    rootValue[kValueKey] = value;
+
+    auto valueStr = chip::JsonToString(rootValue);
+    return gDelegate->LogJSON(valueStr.c_str());
 }
 
 void SetDelegate(RemoteDataModelLoggerDelegate * delegate)

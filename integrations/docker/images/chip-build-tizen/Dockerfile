@@ -30,18 +30,16 @@ RUN set -x \
 
 # ------------------------------------------------------------------------------
 # Install tizen
-ENV TIZEN_VERSION 6.0
+ENV TIZEN_VERSION 7.0
 ENV TIZEN_SDK_ROOT /opt/tizen-sdk
 
-COPY tizen-sdk-installer /tmp/tizen-sdk-installer
+COPY tizen-sdk-installer $TIZEN_SDK_ROOT/files/installer
 RUN set -x \
-    && bash /tmp/tizen-sdk-installer/install.sh \
+    && bash $TIZEN_SDK_ROOT/files/installer/install.sh \
     --tizen-sdk-path $TIZEN_SDK_ROOT \
     --tizen-sdk-data-path $USER_HOME/tizen-sdk-data \
     --tizen-version $TIZEN_VERSION  \
     --override-secret-tool \
-    # Cleanup
-    && rm -rf /tmp/tizen-sdk-installer \
     && : # last line
 
 # ------------------------------------------------------------------------------

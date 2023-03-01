@@ -19,6 +19,7 @@
 #import "CastingServer.h"
 
 #import "CommissionableDataProviderImpl.hpp"
+#import "CommissionerDiscoveryDelegateImpl.h"
 #import "ConversionUtils.hpp"
 #import "DeviceAttestationCredentialsProviderImpl.hpp"
 #import "MatterCallbacks.h"
@@ -32,6 +33,14 @@
 #include <lib/support/CHIPMem.h>
 #include <platform/PlatformManager.h>
 
+#ifndef CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE
+#define CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE 20202021
+#endif
+
+#ifndef CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR
+#define CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR 0xF00
+#endif
+
 @interface CastingServerBridge ()
 
 @property AppParameters * appParameters;
@@ -43,6 +52,8 @@
 @property chip::Credentials::DeviceAttestationCredentialsProvider * deviceAttestationCredentialsProvider;
 
 @property chip::CommonCaseDeviceServerInitParams * serverInitParams;
+
+@property CommissionerDiscoveryDelegateImpl * commissionerDiscoveryDelegate;
 
 @property TargetVideoPlayerInfo * previouslyConnectedVideoPlayer;
 
@@ -97,6 +108,8 @@
             ChipLogError(AppServer, "InitChipStack failed: %s", ErrorStr(err));
             return nil;
         }
+
+        _commissionerDiscoveryDelegate = new CommissionerDiscoveryDelegateImpl();
 
         _commandResponseCallbacks = [NSMutableDictionary dictionary];
         _subscriptionEstablishedCallbacks = [NSMutableDictionary dictionary];
@@ -268,12 +281,19 @@
 }
 
 - (void)discoverCommissioners:(dispatch_queue_t _Nonnull)clientQueue
-    discoveryRequestSentHandler:(nullable void (^)(bool))discoveryRequestSentHandler
+      discoveryRequestSentHandler:(nullable void (^)(bool))discoveryRequestSentHandler
+    discoveredCommissionerHandler:(nullable void (^)(DiscoveredNodeData *))discoveredCommissionerHandler
 {
     ChipLogProgress(AppServer, "CastingServerBridge().discoverCommissioners() called");
     dispatch_async(_chipWorkQueue, ^{
         bool discoveryRequestStatus = true;
-        CHIP_ERROR err = CastingServer::GetInstance()->DiscoverCommissioners();
+
+        if (discoveredCommissionerHandler != nil) {
+            TargetVideoPlayerInfo * cachedTargetVideoPlayerInfos = CastingServer::GetInstance()->ReadCachedTargetVideoPlayerInfos();
+            self->_commissionerDiscoveryDelegate->SetUp(clientQueue, discoveredCommissionerHandler, cachedTargetVideoPlayerInfos);
+        }
+        CHIP_ERROR err = CastingServer::GetInstance()->DiscoverCommissioners(
+            discoveredCommissionerHandler != nil ? self->_commissionerDiscoveryDelegate : nullptr);
         if (err != CHIP_NO_ERROR) {
             ChipLogError(AppServer, "CastingServerBridge().discoverCommissioners() failed: %" CHIP_ERROR_FORMAT, err.Format());
             discoveryRequestStatus = false;
@@ -602,7 +622,8 @@
             self->_previouslyConnectedVideoPlayer->Initialize(currentTargetVideoPlayerInfo->GetNodeId(),
                 currentTargetVideoPlayerInfo->GetFabricIndex(), nullptr, nullptr, currentTargetVideoPlayerInfo->GetVendorId(),
                 currentTargetVideoPlayerInfo->GetProductId(), currentTargetVideoPlayerInfo->GetDeviceType(),
-                currentTargetVideoPlayerInfo->GetDeviceName(), currentTargetVideoPlayerInfo->GetNumIPs(),
+                currentTargetVideoPlayerInfo->GetDeviceName(), currentTargetVideoPlayerInfo->GetHostName(),
+                currentTargetVideoPlayerInfo->GetNumIPs(),
                 const_cast<chip::Inet::IPAddress *>(currentTargetVideoPlayerInfo->GetIpAddresses()));
 
             TargetEndpointInfo * prevEndpoints = self->_previouslyConnectedVideoPlayer->GetEndpoints();
@@ -1166,6 +1187,102 @@
     });
 }
 
+- (void)mediaPlayback_previous:(ContentApp * _Nonnull)contentApp
+              responseCallback:(void (^_Nonnull)(bool))responseCallback
+                   clientQueue:(dispatch_queue_t _Nonnull)clientQueue
+            requestSentHandler:(void (^_Nonnull)(bool))requestSentHandler
+{
+    ChipLogProgress(AppServer, "CastingServerBridge().mediaPlayback_previous() called on Content App with endpoint ID %d",
+        contentApp.endpointId);
+
+    [_commandResponseCallbacks setObject:responseCallback forKey:@"mediaPlayback_previous"];
+    dispatch_async(_chipWorkQueue, ^{
+        TargetEndpointInfo endpoint;
+        [ConversionUtils convertToCppTargetEndpointInfoFrom:contentApp outTargetEndpointInfo:endpoint];
+
+        CHIP_ERROR err = CastingServer::GetInstance()->MediaPlayback_Previous(&endpoint, [](CHIP_ERROR err) {
+            void (^responseCallback)(bool) =
+                [[CastingServerBridge getSharedInstance].commandResponseCallbacks objectForKey:@"mediaPlayback_previous"];
+            responseCallback(CHIP_NO_ERROR == err);
+        });
+        dispatch_async(clientQueue, ^{
+            requestSentHandler(CHIP_NO_ERROR == err);
+        });
+    });
+}
+
+- (void)mediaPlayback_rewind:(ContentApp * _Nonnull)contentApp
+            responseCallback:(void (^_Nonnull)(bool))responseCallback
+                 clientQueue:(dispatch_queue_t _Nonnull)clientQueue
+          requestSentHandler:(void (^_Nonnull)(bool))requestSentHandler
+{
+    ChipLogProgress(
+        AppServer, "CastingServerBridge().mediaPlayback_rewind() called on Content App with endpoint ID %d", contentApp.endpointId);
+
+    [_commandResponseCallbacks setObject:responseCallback forKey:@"mediaPlayback_rewind"];
+    dispatch_async(_chipWorkQueue, ^{
+        TargetEndpointInfo endpoint;
+        [ConversionUtils convertToCppTargetEndpointInfoFrom:contentApp outTargetEndpointInfo:endpoint];
+
+        CHIP_ERROR err = CastingServer::GetInstance()->MediaPlayback_Rewind(&endpoint, [](CHIP_ERROR err) {
+            void (^responseCallback)(bool) =
+                [[CastingServerBridge getSharedInstance].commandResponseCallbacks objectForKey:@"mediaPlayback_rewind"];
+            responseCallback(CHIP_NO_ERROR == err);
+        });
+        dispatch_async(clientQueue, ^{
+            requestSentHandler(CHIP_NO_ERROR == err);
+        });
+    });
+}
+
+- (void)mediaPlayback_fastForward:(ContentApp * _Nonnull)contentApp
+                 responseCallback:(void (^_Nonnull)(bool))responseCallback
+                      clientQueue:(dispatch_queue_t _Nonnull)clientQueue
+               requestSentHandler:(void (^_Nonnull)(bool))requestSentHandler
+{
+    ChipLogProgress(AppServer, "CastingServerBridge().mediaPlayback_fastForward() called on Content App with endpoint ID %d",
+        contentApp.endpointId);
+
+    [_commandResponseCallbacks setObject:responseCallback forKey:@"mediaPlayback_fastForward"];
+    dispatch_async(_chipWorkQueue, ^{
+        TargetEndpointInfo endpoint;
+        [ConversionUtils convertToCppTargetEndpointInfoFrom:contentApp outTargetEndpointInfo:endpoint];
+
+        CHIP_ERROR err = CastingServer::GetInstance()->MediaPlayback_FastForward(&endpoint, [](CHIP_ERROR err) {
+            void (^responseCallback)(bool) =
+                [[CastingServerBridge getSharedInstance].commandResponseCallbacks objectForKey:@"mediaPlayback_fastForward"];
+            responseCallback(CHIP_NO_ERROR == err);
+        });
+        dispatch_async(clientQueue, ^{
+            requestSentHandler(CHIP_NO_ERROR == err);
+        });
+    });
+}
+
+- (void)mediaPlayback_startOver:(ContentApp * _Nonnull)contentApp
+               responseCallback:(void (^_Nonnull)(bool))responseCallback
+                    clientQueue:(dispatch_queue_t _Nonnull)clientQueue
+             requestSentHandler:(void (^_Nonnull)(bool))requestSentHandler
+{
+    ChipLogProgress(AppServer, "CastingServerBridge().mediaPlayback_startOver() called on Content App with endpoint ID %d",
+        contentApp.endpointId);
+
+    [_commandResponseCallbacks setObject:responseCallback forKey:@"mediaPlayback_startOver"];
+    dispatch_async(_chipWorkQueue, ^{
+        TargetEndpointInfo endpoint;
+        [ConversionUtils convertToCppTargetEndpointInfoFrom:contentApp outTargetEndpointInfo:endpoint];
+
+        CHIP_ERROR err = CastingServer::GetInstance()->MediaPlayback_StartOver(&endpoint, [](CHIP_ERROR err) {
+            void (^responseCallback)(bool) =
+                [[CastingServerBridge getSharedInstance].commandResponseCallbacks objectForKey:@"mediaPlayback_startOver"];
+            responseCallback(CHIP_NO_ERROR == err);
+        });
+        dispatch_async(clientQueue, ^{
+            requestSentHandler(CHIP_NO_ERROR == err);
+        });
+    });
+}
+
 - (void)mediaPlayback_subscribeCurrentState:(ContentApp * _Nonnull)contentApp
                                 minInterval:(uint16_t)minInterval
                                 maxInterval:(uint16_t)maxInterval
@@ -1664,7 +1781,7 @@
                     while (iter.Next()) {
                         const chip::app::Clusters::TargetNavigator::Structs::TargetInfoStruct::DecodableType & targetInfo
                             = iter.GetValue();
-                        TargetNavigator_TargetInfoStruct * objCTargetInfo = [[TargetNavigator_TargetInfoStruct alloc]
+                        TargetNavigator_TargetInfoStruct * objCTargetInfoStruct = [[TargetNavigator_TargetInfoStruct alloc]
                             initWithIdentifier:@(targetInfo.identifier)
                                           name:[NSString stringWithUTF8String:targetInfo.name.data()]];
                         [objCTargetList addObject:objCTargetInfoStruct];

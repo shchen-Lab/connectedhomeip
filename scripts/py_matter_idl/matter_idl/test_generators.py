@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+import sys
 import unittest
 from dataclasses import dataclass, field
 from typing import List
@@ -24,7 +25,6 @@ import yaml
 try:
     from matter_idl.matter_idl_parser import CreateParser
 except ImportError:
-    import sys
 
     sys.path.append(os.path.abspath(
         os.path.join(os.path.dirname(__file__), '..')))
@@ -122,6 +122,11 @@ class GeneratorTest:
             return BridgeGenerator(storage, idl)
         if self.generator_name.lower() == 'cpp-app':
             return CppApplicationGenerator(storage, idl)
+        if self.generator_name.lower() == 'custom-example-proto':
+            sys.path.append(os.path.abspath(
+                os.path.join(os.path.dirname(__file__), '../examples')))
+            from matter_idl_plugin import CustomGenerator
+            return CustomGenerator(storage, idl)
         else:
             raise Exception("Unknown generator for testing: %s",
                             self.generator_name.lower())

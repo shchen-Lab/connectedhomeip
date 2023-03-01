@@ -345,7 +345,7 @@ CHIP_ERROR ReadClient::GenerateEventPaths(EventPathIBs::Builder & aEventPathsBui
 {
     for (auto & event : aEventPaths)
     {
-        VerifyOrReturnError(event.IsValidEventPath(), CHIP_ERROR_IM_MALFORMED_ATTRIBUTE_PATH_IB);
+        VerifyOrReturnError(event.IsValidEventPath(), CHIP_ERROR_IM_MALFORMED_EVENT_PATH_IB);
         EventPathIB::Builder & path = aEventPathsBuilder.CreatePath();
         ReturnErrorOnFailure(aEventPathsBuilder.GetError());
         ReturnErrorOnFailure(path.Encode(event));
@@ -639,13 +639,7 @@ CHIP_ERROR ReadClient::ProcessAttributePath(AttributePathIB::Parser & aAttribute
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
     // The ReportData must contain a concrete attribute path
-    err = aAttributePathParser.GetEndpoint(&(aAttributePath.mEndpointId));
-    VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_ERROR_IM_MALFORMED_ATTRIBUTE_PATH_IB);
-    err = aAttributePathParser.GetCluster(&(aAttributePath.mClusterId));
-    VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_ERROR_IM_MALFORMED_ATTRIBUTE_PATH_IB);
-    err = aAttributePathParser.GetAttribute(&(aAttributePath.mAttributeId));
-    VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_ERROR_IM_MALFORMED_ATTRIBUTE_PATH_IB);
-    err = aAttributePathParser.GetListIndex(aAttributePath);
+    err = aAttributePathParser.GetConcreteAttributePath(aAttributePath);
     VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_ERROR_IM_MALFORMED_ATTRIBUTE_PATH_IB);
     return CHIP_NO_ERROR;
 }

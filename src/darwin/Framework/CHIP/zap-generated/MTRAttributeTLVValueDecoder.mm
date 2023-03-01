@@ -3542,7 +3542,7 @@ id MTRDecodeAttributeValue(const ConcreteAttributePath & aPath, TLV::TLVReader &
                 return nil;
             }
             NSNumber * _Nonnull value;
-            value = [NSNumber numberWithUnsignedInt:cppValue];
+            value = [NSNumber numberWithUnsignedShort:chip::to_underlying(cppValue)];
             return value;
         }
         case Attributes::BatANSIDesignation::Id: {
@@ -3575,7 +3575,7 @@ id MTRDecodeAttributeValue(const ConcreteAttributePath & aPath, TLV::TLVReader &
                 return nil;
             }
             NSNumber * _Nonnull value;
-            value = [NSNumber numberWithUnsignedInt:cppValue];
+            value = [NSNumber numberWithUnsignedShort:chip::to_underlying(cppValue)];
             return value;
         }
         case Attributes::BatCapacity::Id: {
@@ -12468,7 +12468,7 @@ id MTRDecodeAttributeValue(const ConcreteAttributePath & aPath, TLV::TLVReader &
                 return nil;
             }
             NSNumber * _Nonnull value;
-            value = [NSNumber numberWithUnsignedChar:cppValue];
+            value = [NSNumber numberWithUnsignedChar:cppValue.Raw()];
             return value;
         }
         case Attributes::OccupancySensorType::Id: {
@@ -12479,7 +12479,7 @@ id MTRDecodeAttributeValue(const ConcreteAttributePath & aPath, TLV::TLVReader &
                 return nil;
             }
             NSNumber * _Nonnull value;
-            value = [NSNumber numberWithUnsignedChar:cppValue];
+            value = [NSNumber numberWithUnsignedChar:chip::to_underlying(cppValue)];
             return value;
         }
         case Attributes::OccupancySensorTypeBitmap::Id: {
@@ -12490,7 +12490,7 @@ id MTRDecodeAttributeValue(const ConcreteAttributePath & aPath, TLV::TLVReader &
                 return nil;
             }
             NSNumber * _Nonnull value;
-            value = [NSNumber numberWithUnsignedChar:cppValue];
+            value = [NSNumber numberWithUnsignedChar:cppValue.Raw()];
             return value;
         }
         case Attributes::PIROccupiedToUnoccupiedDelay::Id: {

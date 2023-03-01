@@ -8,12 +8,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import chip.devicecontroller.ChipDeviceController
 import chip.devicecontroller.ChipIdLookup
 import chip.devicecontroller.ReportCallback
-import chip.devicecontroller.ReportEventCallback
 import chip.devicecontroller.ResubscriptionAttemptCallback
 import chip.devicecontroller.SubscriptionEstablishedCallback
 import chip.devicecontroller.model.ChipAttributePath
@@ -22,20 +23,15 @@ import chip.devicecontroller.model.ChipPathId
 import chip.devicecontroller.model.NodeState
 import com.google.chip.chiptool.ChipClient
 import com.google.chip.chiptool.R
+import com.google.chip.chiptool.databinding.WildcardFragmentBinding
 import java.lang.StringBuilder
-import kotlinx.android.synthetic.main.wildcard_fragment.attributeIdEd
-import kotlinx.android.synthetic.main.wildcard_fragment.clusterIdEd
-import kotlinx.android.synthetic.main.wildcard_fragment.endpointIdEd
-import kotlinx.android.synthetic.main.wildcard_fragment.eventIdEd
-import kotlinx.android.synthetic.main.wildcard_fragment.outputTv
-import kotlinx.android.synthetic.main.wildcard_fragment.view.readBtn
-import kotlinx.android.synthetic.main.wildcard_fragment.view.readEventBtn
-import kotlinx.android.synthetic.main.wildcard_fragment.view.subscribeBtn
-import kotlinx.android.synthetic.main.wildcard_fragment.view.subscribeEventBtn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class WildcardFragment : Fragment() {
+  private var _binding: WildcardFragmentBinding? = null
+  private val binding get() = _binding!!
+
   private val deviceController: ChipDeviceController
     get() = ChipClient.getDeviceController(requireContext())
 
@@ -60,7 +56,7 @@ class WildcardFragment : Fragment() {
 
       val debugString = nodeStateToDebugString(nodeState)
       Log.i(TAG, debugString)
-      requireActivity().runOnUiThread { outputTv.text = debugString }
+      requireActivity().runOnUiThread { binding.outputTv.text = debugString }
     }
 
     override fun onDone() {
@@ -73,16 +69,22 @@ class WildcardFragment : Fragment() {
     container: ViewGroup?,
     savedInstanceState: Bundle?,
   ): View {
+    _binding = WildcardFragmentBinding.inflate(inflater, container, false)
     scope = viewLifecycleOwner.lifecycleScope
-    return inflater.inflate(R.layout.wildcard_fragment, container, false).apply {
-      subscribeBtn.setOnClickListener { scope.launch { showSubscribeDialog(ATTRIBUTE) } }
-      readBtn.setOnClickListener { scope.launch { showReadDialog(ATTRIBUTE) } }
-      subscribeEventBtn.setOnClickListener { scope.launch { showSubscribeDialog(EVENT) } }
-      readEventBtn.setOnClickListener { scope.launch { showReadDialog(EVENT) } }
+    binding.subscribeBtn.setOnClickListener { scope.launch { showSubscribeDialog(ATTRIBUTE) } }
+    binding.readBtn.setOnClickListener { scope.launch { showReadDialog(ATTRIBUTE) } }
+    binding.subscribeEventBtn.setOnClickListener { scope.launch { showSubscribeDialog(EVENT) } }
+    binding.readEventBtn.setOnClickListener { scope.launch { showReadDialog(EVENT) } }
 
-      addressUpdateFragment =
-        childFragmentManager.findFragmentById(R.id.addressUpdateFragment) as AddressUpdateFragment
-    }
+    addressUpdateFragment =
+      childFragmentManager.findFragmentById(R.id.addressUpdateFragment) as AddressUpdateFragment
+
+    return binding.root
+  }
+
+  override fun onDestroyView() {
+    super.onDestroyView()
+    _binding = null
   }
 
   private fun nodeStateToDebugString(nodeState: NodeState): String {
@@ -113,7 +115,7 @@ class WildcardFragment : Fragment() {
     return stringBuilder.toString()
   }
 
-  private suspend fun subscribe(type: Int, minInterval: Int, maxInterval: Int, keepSubscriptions: Boolean, isFabricFiltered: Boolean) {
+  private suspend fun subscribe(type: Int, minInterval: Int, maxInterval: Int, keepSubscriptions: Boolean, isFabricFiltered: Boolean, isUrgent: Boolean) {
     val subscriptionEstablishedCallback =
       SubscriptionEstablishedCallback { Log.i(TAG, "Subscription to device established") }
 
@@ -121,10 +123,10 @@ class WildcardFragment : Fragment() {
       ResubscriptionAttemptCallback { terminationCause, nextResubscribeIntervalMsec
                                      -> Log.i(TAG, "ResubscriptionAttempt terminationCause:$terminationCause, nextResubscribeIntervalMsec:$nextResubscribeIntervalMsec") }
 
-    val endpointId = getChipPathIdForText(endpointIdEd.text.toString())
-    val clusterId = getChipPathIdForText(clusterIdEd.text.toString())
-    val attributeId = getChipPathIdForText(attributeIdEd.text.toString())
-    val eventId = getChipPathIdForText(eventIdEd.text.toString())
+    val endpointId = getChipPathIdForText(binding.endpointIdEd.text.toString())
+    val clusterId = getChipPathIdForText(binding.clusterIdEd.text.toString())
+    val attributeId = getChipPathIdForText(binding.attributeIdEd.text.toString())
+    val eventId = getChipPathIdForText(binding.eventIdEd.text.toString())
 
     if (type == ATTRIBUTE) {
       val attributePath = ChipAttributePath.newInstance(endpointId, clusterId, attributeId)
@@ -140,7 +142,7 @@ class WildcardFragment : Fragment() {
                                        keepSubscriptions,
                                        isFabricFiltered)
     } else if (type == EVENT) {
-      val eventPath = ChipEventPath.newInstance(endpointId, clusterId, eventId)
+      val eventPath = ChipEventPath.newInstance(endpointId, clusterId, eventId, isUrgent)
       deviceController.subscribeToPath(subscriptionEstablishedCallback,
                                       resubscriptionAttemptCallback,
                                       reportCallback,
@@ -156,10 +158,10 @@ class WildcardFragment : Fragment() {
   }
 
   private suspend fun read(type: Int, isFabricFiltered: Boolean) {
-    val endpointId = getChipPathIdForText(endpointIdEd.text.toString())
-    val clusterId = getChipPathIdForText(clusterIdEd.text.toString())
-    val attributeId = getChipPathIdForText(attributeIdEd.text.toString())
-    val eventId = getChipPathIdForText(eventIdEd.text.toString())
+    val endpointId = getChipPathIdForText(binding.endpointIdEd.text.toString())
+    val clusterId = getChipPathIdForText(binding.clusterIdEd.text.toString())
+    val attributeId = getChipPathIdForText(binding.attributeIdEd.text.toString())
+    val eventId = getChipPathIdForText(binding.eventIdEd.text.toString())
 
     if (type == ATTRIBUTE) {
       val attributePath = ChipAttributePath.newInstance(endpointId, clusterId, attributeId)
@@ -186,7 +188,7 @@ class WildcardFragment : Fragment() {
       setView(dialogView)
     }.create()
 
-    val isFabricFilteredEd = dialogView.findViewById<EditText>(R.id.isFabricFilteredEd)
+    val isFabricFilteredEd = dialogView.findViewById<EditText>(R.id.isFabricFilteredSp)
     dialogView.findViewById<Button>(R.id.readBtn).setOnClickListener {
       scope.launch {
         read(type, isFabricFilteredEd.text.toString().toBoolean())
@@ -198,17 +200,37 @@ class WildcardFragment : Fragment() {
 
   private fun showSubscribeDialog(type: Int) {
     val dialogView = requireActivity().layoutInflater.inflate(R.layout.subscribe_dialog, null)
+    val isUrgentTv = dialogView.findViewById<TextView>(R.id.titleisUrgent)
+    val isUrgentSp = dialogView.findViewById<Spinner>(R.id.isUrgentSp)
+    if (type == EVENT) {
+      isUrgentTv.visibility = View.VISIBLE
+      isUrgentSp.visibility = View.VISIBLE
+    } else {
+      isUrgentTv.visibility = View.GONE
+      isUrgentSp.visibility = View.GONE
+    }
     val dialog = AlertDialog.Builder(requireContext()).apply {
       setView(dialogView)
     }.create()
 
     val minIntervalEd = dialogView.findViewById<EditText>(R.id.minIntervalEd)
     val maxIntervalEd = dialogView.findViewById<EditText>(R.id.maxIntervalEd)
-    val keepSubscriptionsEd = dialogView.findViewById<EditText>(R.id.keepSubscriptionsEd)
-    val isFabricFilteredEd = dialogView.findViewById<EditText>(R.id.isFabricFilteredEd)
+    val keepSubscriptionsSp = dialogView.findViewById<Spinner>(R.id.keepSubscriptionsSp)
+    val isFabricFilteredSp = dialogView.findViewById<Spinner>(R.id.isFabricFilteredSp)
     dialogView.findViewById<Button>(R.id.subscribeBtn).setOnClickListener {
       scope.launch {
-        subscribe(type, minIntervalEd.text.toString().toInt(), maxIntervalEd.text.toString().toInt(), keepSubscriptionsEd.text.toString().toBoolean(), isFabricFilteredEd.text.toString().toBoolean())
+        if(minIntervalEd.text.isNotBlank() && maxIntervalEd.text.isNotBlank()) {
+          subscribe(
+            type,
+            minIntervalEd.text.toString().toInt(),
+            maxIntervalEd.text.toString().toInt(),
+            keepSubscriptionsSp.selectedItem.toString().toBoolean(),
+            isFabricFilteredSp.selectedItem.toString().toBoolean(),
+            isUrgentSp.selectedItem.toString().toBoolean(),
+          )
+        } else {
+          Log.e(TAG, "minInterval or maxInterval is empty!" )
+        }
         requireActivity().runOnUiThread { dialog.dismiss() }
       }
     }

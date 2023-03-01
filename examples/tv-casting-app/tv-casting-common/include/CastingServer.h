@@ -57,7 +57,7 @@ public:
     CHIP_ERROR Init(AppParams * AppParams = nullptr);
     CHIP_ERROR InitBindingHandlers();
 
-    CHIP_ERROR DiscoverCommissioners();
+    CHIP_ERROR DiscoverCommissioners(chip::Controller::DeviceDiscoveryDelegate * deviceDiscoveryDelegate = nullptr);
     const chip::Dnssd::DiscoveredNodeData *
     GetDiscoveredCommissioner(int index, chip::Optional<TargetVideoPlayerInfo *> & outAssociatedConnectableVideoPlayer);
     CHIP_ERROR OpenBasicCommissioningWindow(std::function<void(CHIP_ERROR)> commissioningCompleteCallback,
@@ -97,6 +97,7 @@ public:
                                            std::function<void(CHIP_ERROR)> onConnectionFailure,
                                            std::function<void(TargetEndpointInfo *)> onNewOrUpdatedEndpoint);
 
+    void LogCachedVideoPlayers();
     CHIP_ERROR PurgeVideoPlayerCache();
 
     /**
@@ -185,6 +186,10 @@ public:
     CHIP_ERROR MediaPlayback_Pause(TargetEndpointInfo * endpoint, std::function<void(CHIP_ERROR)> responseCallback);
     CHIP_ERROR MediaPlayback_StopPlayback(TargetEndpointInfo * endpoint, std::function<void(CHIP_ERROR)> responseCallback);
     CHIP_ERROR MediaPlayback_Next(TargetEndpointInfo * endpoint, std::function<void(CHIP_ERROR)> responseCallback);
+    CHIP_ERROR MediaPlayback_Previous(TargetEndpointInfo * endpoint, std::function<void(CHIP_ERROR)> responseCallback);
+    CHIP_ERROR MediaPlayback_Rewind(TargetEndpointInfo * endpoint, std::function<void(CHIP_ERROR)> responseCallback);
+    CHIP_ERROR MediaPlayback_FastForward(TargetEndpointInfo * endpoint, std::function<void(CHIP_ERROR)> responseCallback);
+    CHIP_ERROR MediaPlayback_StartOver(TargetEndpointInfo * endpoint, std::function<void(CHIP_ERROR)> responseCallback);
     CHIP_ERROR MediaPlayback_Seek(TargetEndpointInfo * endpoint, uint64_t position,
                                   std::function<void(CHIP_ERROR)> responseCallback);
     CHIP_ERROR MediaPlayback_SkipForward(TargetEndpointInfo * endpoint, uint64_t deltaPositionMilliseconds,
@@ -432,8 +437,9 @@ private:
     TargetVideoPlayerInfo mCachedTargetVideoPlayerInfo[kMaxCachedVideoPlayers];
     uint16_t mTargetVideoPlayerVendorId                                   = 0;
     uint16_t mTargetVideoPlayerProductId                                  = 0;
-    uint16_t mTargetVideoPlayerDeviceType                                 = 0;
+    chip::DeviceTypeId mTargetVideoPlayerDeviceType                       = 0;
     char mTargetVideoPlayerDeviceName[chip::Dnssd::kMaxDeviceNameLen + 1] = {};
+    char mTargetVideoPlayerHostName[chip::Dnssd::kHostNameMaxLength + 1]  = {};
     size_t mTargetVideoPlayerNumIPs                                       = 0; // number of valid IP addresses
     chip::Inet::IPAddress mTargetVideoPlayerIpAddress[chip::Dnssd::CommonResolutionData::kMaxIPAddresses];
 
@@ -477,6 +483,10 @@ private:
     PauseCommand mPauseCommand;
     StopPlaybackCommand mStopPlaybackCommand;
     NextCommand mNextCommand;
+    PreviousCommand mPreviousCommand;
+    RewindCommand mRewindCommand;
+    FastForwardCommand mFastForwardCommand;
+    StartOverCommand mStartOverCommand;
     SeekCommand mSeekCommand;
     SkipForwardCommand mSkipForwardCommand;
     SkipBackwardCommand mSkipBackwardCommand;

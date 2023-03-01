@@ -71,6 +71,8 @@
         "Test_TC_OPCREDS_3_2",
         "Test_TC_OPCREDS_3_3",
         "Test_TC_OPCREDS_3_4",
+        "Test_TC_OPCREDS_3_5",
+        "Test_TC_OPCREDS_3_6",
         "Test_TC_CNET_4_1",
         "Test_TC_CNET_4_2",
         "Test_TC_CNET_4_3",
@@ -98,7 +100,7 @@
         "Test_TC_DLOG_3_1"
     ],
     "Descriptor": ["Test_TC_DESC_2_1"],
-    "GeneralCommissioning": ["Test_TC_CGEN_2_2", "Test_TC_CGEN_2_4"],
+    "GeneralCommissioning": ["Test_TC_CGEN_2_2"],
     "GeneralDiagnostics": [
         "Test_TC_DGGEN_2_2",
         "Test_TC_DGGEN_2_3",
@@ -116,6 +118,7 @@
         "Test_TC_IDM_4_1",
         "Test_TC_IDM_4_2",
         "Test_TC_IDM_4_3",
+        "Test_TC_IDM_4_4",
         "Test_TC_IDM_5_1",
         "Test_TC_IDM_5_2",
         "Test_TC_IDM_6_1",
