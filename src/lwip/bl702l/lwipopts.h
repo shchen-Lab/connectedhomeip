@@ -68,7 +68,6 @@
 
 #define LWIP_IPV4 0
 #define LWIP_IPV6 1
-#define LWIP_IPV6_ROUTE_TABLE_SUPPORT 1
 #define LWIP_ARP (0)
 #define LWIP_DNS (0)
 #define LWIP_ICMP (0)
@@ -106,7 +105,7 @@
 #define PBUF_LINK_HLEN (0)
 
 #define TCPIP_THREAD_STACKSIZE (2048)
-#define TCPIP_THREAD_PRIO (2)
+#define TCPIP_THREAD_PRIO (29)
 
 #define NETIF_MAX_HWADDR_LEN 8U
 
