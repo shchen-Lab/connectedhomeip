@@ -225,3 +225,74 @@ void set_temperature(uint8_t currLevel,uint16_t temperature)
     set_level(currLevel);
 #endif
 }
+void set_warm_temperature(void)
+{
+    uint8_t currLevel=254;
+    uint16_t temperature=LAM_MAX_MIREDS_DEFAULT;
+#if MAX_PWM_CHANNEL
+    uint32_t hw_temp_delta=LAM_MAX_MIREDS_DEFAULT-LAM_MIN_MIREDS_DEFAULT;
+    uint32_t soft_temp_delta;
+
+    if(temperature>LAM_MAX_MIREDS_DEFAULT)
+    {
+        temperature=LAM_MAX_MIREDS_DEFAULT;
+    }
+    else if(temperature<LAM_MIN_MIREDS_DEFAULT)
+    {
+        temperature=LAM_MIN_MIREDS_DEFAULT;
+    }
+    
+    soft_temp_delta=temperature-LAM_MIN_MIREDS_DEFAULT;
+    soft_temp_delta*=100;
+
+    uint32_t warm = (254*(soft_temp_delta/hw_temp_delta))/100;
+    uint32_t clod  = 254-warm;
+
+    hosal_pwm_config_t para[2];
+    para[0].duty_cycle = PWM_DUTY_CYCLE*(warm*currLevel)/(254*254);
+    para[0].freq       = PWM_FREQ;
+    para[1].duty_cycle = PWM_DUTY_CYCLE*(clod*currLevel)/(254*254);
+    para[1].freq       = PWM_FREQ;
+
+    demo_hosal_pwm_change_param(para);
+#else
+    set_level(currLevel);
+#endif
+
+}
+
+void set_cold_temperature(void)
+{
+    uint8_t currLevel=254;
+    uint16_t temperature=LAM_MIN_MIREDS_DEFAULT;
+#if MAX_PWM_CHANNEL
+    uint32_t hw_temp_delta=LAM_MAX_MIREDS_DEFAULT-LAM_MIN_MIREDS_DEFAULT;
+    uint32_t soft_temp_delta;
+
+    if(temperature>LAM_MAX_MIREDS_DEFAULT)
+    {
+        temperature=LAM_MAX_MIREDS_DEFAULT;
+    }
+    else if(temperature<LAM_MIN_MIREDS_DEFAULT)
+    {
+        temperature=LAM_MIN_MIREDS_DEFAULT;
+    }
+    
+    soft_temp_delta=temperature-LAM_MIN_MIREDS_DEFAULT;
+    soft_temp_delta*=100;
+
+    uint32_t warm = (254*(soft_temp_delta/hw_temp_delta))/100;
+    uint32_t clod  = 254-warm;
+
+    hosal_pwm_config_t para[2];
+    para[0].duty_cycle = PWM_DUTY_CYCLE*(warm*currLevel)/(254*254);
+    para[0].freq       = PWM_FREQ;
+    para[1].duty_cycle = PWM_DUTY_CYCLE*(clod*currLevel)/(254*254);
+    para[1].freq       = PWM_FREQ;
+
+    demo_hosal_pwm_change_param(para);
+#else
+    set_level(currLevel);
+#endif
+
+}

@@ -197,7 +197,13 @@ void AppTask::AppTaskMain(void * pvParameter)
     {
         appEvent                 = APP_EVENT_NONE;
         BaseType_t eventReceived = xTaskNotifyWait(0, APP_EVENT_ALL_MASK, (uint32_t *) &appEvent, portMAX_DELAY);
-
+        if (GetAppTask().mIsConnected == true)
+        {
+            if (Server::GetInstance().GetFabricTable().FabricCount() == 0)
+            {
+                DeviceLayer::ConfigurationMgr().InitiateFactoryReset();
+            }
+        }
         if (eventReceived)
         {
             PlatformMgr().LockChipStack();
