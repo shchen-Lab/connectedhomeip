@@ -428,12 +428,14 @@ void AppTask::LightingSetStatus(app_event_t status)
     uint8_t level, hue, sat;
     bool onoff                = true;
     EndpointId endpoint       = GetAppTask().GetEndpointId();
-    static bool isProvisioned = false;
+    static bool isProvisioned = true;
 
     if (APP_EVENT_SYS_LIGHT_TOGGLE == status)
     {
+#if 0
         Clusters::OnOff::Attributes::OnOff::Get(endpoint, &onoff);
         onoff = !onoff;
+#endif
     }
     else if (APP_EVENT_SYS_BLE_ADV == status)
     {
@@ -450,14 +452,23 @@ void AppTask::LightingSetStatus(app_event_t status)
     }
     else if (APP_EVENT_SYS_PROVISIONED == status)
     {
-        if (isProvisioned)
+
+        if (isProvisioned == false)
         {
+            ChipLogError(NotSpecified, "222222222222222222222222");
             GetAppTask().ProvisionLightTimerStart();
+            isProvisioned = true;
             return;
         }
-        isProvisioned = true;
-        onoff         = true;
-        Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
+        else
+        {
+            ChipLogError(NotSpecified, "3333333333333");
+            onoff = true;
+            level = 254;
+            Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
+            Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
+        }
+
 #if 0
         sat           = 0;
         Clusters::ColorControl::Attributes::CurrentSaturation::Set(endpoint, sat);
@@ -465,8 +476,6 @@ void AppTask::LightingSetStatus(app_event_t status)
         Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
 #endif
     }
-
-    Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
 }
 
 bool AppTask::StartTimer(void)

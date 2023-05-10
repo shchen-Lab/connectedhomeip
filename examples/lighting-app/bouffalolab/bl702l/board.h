@@ -48,7 +48,12 @@
 #define LED_G_PIN_PORT 1
 #define LED_G_PIN 16
 
-#define MAX_PWM_CHANNEL 3
+#define LED_C_PIN_PORT 0
+#define LED_C_PIN 10
+
+#define LED_W_PIN_PORT 1
+#define LED_W_PIN 16
+#define MAX_PWM_CHANNEL 5
 
 #elif defined(XT_ZB6_DevKit)
 
