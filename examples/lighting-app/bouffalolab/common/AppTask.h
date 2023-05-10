@@ -124,6 +124,11 @@ private:
     static void TimerEventHandler(app_event_t event);
     static void TimerCallback(TimerHandle_t xTimer);
 
+    static void ProvisionLight_Timer_Init(void);
+    static void ProvisionLightTimerCallback(TimerHandle_t xTimer);
+    static void ProvisionLightTimerStart(void);
+    static void ProvisionLightTimerStop(void);
+
 #ifdef LED_BTN_RESET
     static void ButtonInit(void);
     static bool ButtonPressed(void);
@@ -144,6 +149,9 @@ private:
     uint64_t mButtonPressedTime;
     bool mIsFactoryResetIndicat;
     bool mIsConnected;
+
+    TimerHandle_t ProvisionLightTimer;
+    uint8_t ProvisionLightTimer_Count;
 
     static StackType_t appStack[APP_TASK_STACK_SIZE / sizeof(StackType_t)];
     static StaticTask_t appTaskStruct;

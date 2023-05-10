@@ -61,6 +61,7 @@
 
 extern "C" {
 #include "board.h"
+#include "demo_pwm.h"
 #include <bl_gpio.h>
 #include <easyflash.h>
 #include <hal_gpio.h>
@@ -183,6 +184,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     GetAppTask().mIsConnected = false;
 
     GetAppTask().sTimer = xTimerCreate("lightTmr", pdMS_TO_TICKS(1000), false, NULL, AppTask::TimerCallback);
+    GetAppTask().ProvisionLight_Timer_Init();
     if (GetAppTask().sTimer == NULL)
     {
         ChipLogError(NotSpecified, "Failed to create timer task");
@@ -435,26 +437,33 @@ void AppTask::LightingSetStatus(app_event_t status)
     }
     else if (APP_EVENT_SYS_BLE_ADV == status)
     {
+#if 0
         hue = 35;
         Clusters::ColorControl::Attributes::CurrentHue::Set(endpoint, hue);
         sat = 254;
         Clusters::ColorControl::Attributes::CurrentSaturation::Set(endpoint, sat);
         level = 254;
         Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
-
+#endif
+        GetAppTask().ProvisionLightTimerStart();
         isProvisioned = false;
     }
     else if (APP_EVENT_SYS_PROVISIONED == status)
     {
         if (isProvisioned)
         {
+            GetAppTask().ProvisionLightTimerStart();
             return;
         }
         isProvisioned = true;
+        onoff         = true;
+        Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
+#if 0
         sat           = 0;
         Clusters::ColorControl::Attributes::CurrentSaturation::Set(endpoint, sat);
         level = 254;
         Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
+#endif
     }
 
     Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
@@ -503,7 +512,7 @@ void AppTask::TimerEventHandler(app_event_t event)
         {
             GetAppTask().mIsFactoryResetIndicat = true;
 #if defined(BL706_NIGHT_LIGHT) || defined(BL602_NIGHT_LIGHT)
-            sLightLED.SetColor(254, 0, 210);
+            // sLightLED.SetColor(254, 0, 210);
 #ifndef LED_BTN_RESET
             uint32_t resetCnt               = 0;
             GetAppTask().mButtonPressedTime = 0;
@@ -637,6 +646,81 @@ void AppTask::IdentifyHandleOp(app_event_t event)
         LightingUpdate(APP_EVENT_LIGHTING_GO_THROUGH);
         ChipLogProgress(NotSpecified, "identify stop");
     }
+}
+
+void AppTask::ProvisionLight_Timer_Init(void)
+{
+    GetAppTask().ProvisionLightTimer =
+        xTimerCreate("ProvisionLightTmr", pdMS_TO_TICKS(100), true, NULL, AppTask::ProvisionLightTimerCallback);
+    if (GetAppTask().ProvisionLightTimer == NULL)
+    {
+        ChipLogError(NotSpecified, "Failed to create timer task");
+    }
+}
+void AppTask::ProvisionLightTimerCallback(TimerHandle_t xTimer)
+{
+    GetAppTask().ProvisionLightTimer_Count++;
+    if (GetAppTask().mIsConnected == false)
+    {
+        if (GetAppTask().ProvisionLightTimer_Count <= 10)
+        {
+            set_cold_temperature(254);
+            ChipLogError(NotSpecified, "set_cold_temperature");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 11)
+        {
+            set_cold_temperature(0);
+            ChipLogError(NotSpecified, "set_coldwarm off");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 12)
+        {
+            set_warm_temperature(254);
+            ChipLogError(NotSpecified, "set_warm_temperature");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 13)
+        {
+            set_cold_temperature(0);
+            ChipLogError(NotSpecified, "set_coldwarm off");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 14)
+        {
+            set_cold_temperature(254);
+            ChipLogError(NotSpecified, "set_cold_temperature");
+            ProvisionLightTimerStop();
+        }
+    }
+    else
+    {
+
+        if (GetAppTask().ProvisionLightTimer_Count == 1)
+        {
+            set_cold_temperature(0);
+            ChipLogError(NotSpecified, "set_coldwarm off");
+        }
+        else
+        {
+            set_cold_temperature(254);
+            ChipLogError(NotSpecified, "set_cold_temperature");
+            ProvisionLightTimerStop();
+        }
+    }
+}
+void AppTask::ProvisionLightTimerStart(void)
+{
+    if (xTimerIsTimerActive(GetAppTask().ProvisionLightTimer) && GetAppTask().ProvisionLightTimer != NULL)
+    {
+        ProvisionLightTimerStop();
+    }
+
+    if (xTimerChangePeriod(GetAppTask().ProvisionLightTimer, pdMS_TO_TICKS(100), 0) != pdPASS)
+    {
+        ChipLogProgress(NotSpecified, "Failed to access timer with 100 ms delay.");
+    }
+}
+void AppTask::ProvisionLightTimerStop(void)
+{
+    xTimerStop(GetAppTask().ProvisionLightTimer, 0);
+    GetAppTask().ProvisionLightTimer_Count = 0;
 }
 
 void AppTask::ButtonEventHandler(uint8_t btnIdx, uint8_t btnAction)

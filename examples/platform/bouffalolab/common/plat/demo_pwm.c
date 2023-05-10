@@ -225,9 +225,8 @@ void set_temperature(uint8_t currLevel,uint16_t temperature)
     set_level(currLevel);
 #endif
 }
-void set_warm_temperature(void)
+void set_warm_temperature(uint8_t currLevel)
 {
-    uint8_t currLevel=254;
     uint16_t temperature=LAM_MAX_MIREDS_DEFAULT;
 #if MAX_PWM_CHANNEL
     uint32_t hw_temp_delta=LAM_MAX_MIREDS_DEFAULT-LAM_MIN_MIREDS_DEFAULT;
@@ -261,9 +260,8 @@ void set_warm_temperature(void)
 
 }
 
-void set_cold_temperature(void)
+void set_cold_temperature(uint8_t currLevel)
 {
-    uint8_t currLevel=254;
     uint16_t temperature=LAM_MIN_MIREDS_DEFAULT;
 #if MAX_PWM_CHANNEL
     uint32_t hw_temp_delta=LAM_MAX_MIREDS_DEFAULT-LAM_MIN_MIREDS_DEFAULT;
