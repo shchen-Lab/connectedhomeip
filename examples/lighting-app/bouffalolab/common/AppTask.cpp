@@ -230,7 +230,6 @@ void AppTask::AppTaskMain(void * pvParameter)
                 LightingSetStatus(APP_EVENT_SYS_LIGHT_TOGGLE);
                 LightingUpdate(APP_EVENT_LIGHTING_GO_THROUGH);
             }
-
             if ((APP_EVENT_LIGHTING_MASK & appEvent) && isStateReady)
             {
                 LightingUpdate((app_event_t) (APP_EVENT_LIGHTING_MASK & appEvent));
@@ -432,21 +431,12 @@ void AppTask::LightingSetStatus(app_event_t status)
 
     if (APP_EVENT_SYS_LIGHT_TOGGLE == status)
     {
-#if 0
+
         Clusters::OnOff::Attributes::OnOff::Get(endpoint, &onoff);
         onoff = !onoff;
-#endif
     }
     else if (APP_EVENT_SYS_BLE_ADV == status)
     {
-#if 0
-        hue = 35;
-        Clusters::ColorControl::Attributes::CurrentHue::Set(endpoint, hue);
-        sat = 254;
-        Clusters::ColorControl::Attributes::CurrentSaturation::Set(endpoint, sat);
-        level = 254;
-        Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
-#endif
         GetAppTask().ProvisionLightTimerStart();
         isProvisioned = false;
     }
@@ -455,26 +445,18 @@ void AppTask::LightingSetStatus(app_event_t status)
 
         if (isProvisioned == false)
         {
-            ChipLogError(NotSpecified, "222222222222222222222222");
             GetAppTask().ProvisionLightTimerStart();
             isProvisioned = true;
             return;
         }
         else
         {
-            ChipLogError(NotSpecified, "3333333333333");
+
             onoff = true;
             level = 254;
             Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
             Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
         }
-
-#if 0
-        sat           = 0;
-        Clusters::ColorControl::Attributes::CurrentSaturation::Set(endpoint, sat);
-        level = 254;
-        Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
-#endif
     }
 }
 
@@ -711,6 +693,7 @@ void AppTask::ProvisionLightTimerCallback(TimerHandle_t xTimer)
             set_cold_temperature(254);
             ChipLogError(NotSpecified, "set_cold_temperature");
             ProvisionLightTimerStop();
+            GetAppTask().PostEvent(APP_EVENT_SYS_PROVISIONED);
         }
     }
 }
