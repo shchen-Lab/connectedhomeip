@@ -272,7 +272,10 @@ void AppTask::ChipEventHandler(const ChipDeviceEvent * event, intptr_t arg)
         }
         else
         {
-            GetAppTask().PostEvent(APP_EVENT_SYS_BLE_ADV);
+            if (event->CHIPoBLEAdvertisingChange.Result == kActivity_Started)
+            {
+                GetAppTask().PostEvent(APP_EVENT_SYS_BLE_ADV);
+            }
 
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI
             GetAppTask().mIsConnected = ConnectivityMgr().IsWiFiStationConnected();
@@ -642,7 +645,7 @@ void AppTask::IdentifyHandleOp(app_event_t event)
 void AppTask::ProvisionLight_Timer_Init(void)
 {
     GetAppTask().ProvisionLightTimer =
-        xTimerCreate("ProvisionLightTmr", pdMS_TO_TICKS(100), true, NULL, AppTask::ProvisionLightTimerCallback);
+        xTimerCreate("ProvisionLightTmr", pdMS_TO_TICKS(100), pdTRUE, NULL, AppTask::ProvisionLightTimerCallback);
     if (GetAppTask().ProvisionLightTimer == NULL)
     {
         ChipLogError(NotSpecified, "Failed to create timer task");
@@ -650,32 +653,32 @@ void AppTask::ProvisionLight_Timer_Init(void)
 }
 void AppTask::ProvisionLightTimerCallback(TimerHandle_t xTimer)
 {
-    GetAppTask().ProvisionLightTimer_Count++;
+
     if (GetAppTask().mIsConnected == false)
     {
-        if (GetAppTask().ProvisionLightTimer_Count <= 10)
+        if (GetAppTask().ProvisionLightTimer_Count == 0)
         {
-            set_cold_temperature(254);
+            set_cold_temperature();
             ChipLogError(NotSpecified, "set_cold_temperature");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 10)
+        {
+            set_warm_cold_off();
+            ChipLogError(NotSpecified, "set_coldwarm off");
         }
         else if (GetAppTask().ProvisionLightTimer_Count == 11)
         {
-            set_cold_temperature(0);
-            ChipLogError(NotSpecified, "set_coldwarm off");
+            set_warm_temperature();
+            ChipLogError(NotSpecified, "set_warm_temperature");
         }
         else if (GetAppTask().ProvisionLightTimer_Count == 12)
         {
-            set_warm_temperature(254);
-            ChipLogError(NotSpecified, "set_warm_temperature");
+            set_warm_cold_off();
+            ChipLogError(NotSpecified, "set_coldwarm off");
         }
         else if (GetAppTask().ProvisionLightTimer_Count == 13)
         {
-            set_cold_temperature(0);
-            ChipLogError(NotSpecified, "set_coldwarm off");
-        }
-        else if (GetAppTask().ProvisionLightTimer_Count == 14)
-        {
-            set_cold_temperature(254);
+            set_cold_temperature();
             ChipLogError(NotSpecified, "set_cold_temperature");
             ProvisionLightTimerStop();
         }
@@ -683,19 +686,20 @@ void AppTask::ProvisionLightTimerCallback(TimerHandle_t xTimer)
     else
     {
 
-        if (GetAppTask().ProvisionLightTimer_Count == 1)
+        if (GetAppTask().ProvisionLightTimer_Count == 0)
         {
-            set_cold_temperature(0);
+            set_warm_cold_off();
             ChipLogError(NotSpecified, "set_coldwarm off");
         }
         else
         {
-            set_cold_temperature(254);
+            set_cold_temperature();
             ChipLogError(NotSpecified, "set_cold_temperature");
             ProvisionLightTimerStop();
             GetAppTask().PostEvent(APP_EVENT_SYS_PROVISIONED);
         }
     }
+    GetAppTask().ProvisionLightTimer_Count++;
 }
 void AppTask::ProvisionLightTimerStart(void)
 {

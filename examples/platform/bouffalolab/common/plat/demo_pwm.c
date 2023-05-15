@@ -376,70 +376,83 @@ void set_temperature(uint8_t currLevel,uint16_t temperature)
 
     }
 }
-void set_warm_temperature(uint8_t currLevel)
+void set_warm_temperature()
 {
-    uint16_t temperature=LAM_MAX_MIREDS_DEFAULT;
-#if MAX_PWM_CHANNEL
-    uint32_t hw_temp_delta=LAM_MAX_MIREDS_DEFAULT-LAM_MIN_MIREDS_DEFAULT;
-    uint32_t soft_temp_delta;
+    hosal_pwm_config_t para[5];
+    para[0].duty_cycle = 0;
+    para[0].freq       = PWM_FREQ;
+    para[1].duty_cycle = 0;
+    para[1].freq       = PWM_FREQ;
+    para[2].duty_cycle = 0;
+    para[2].freq       = PWM_FREQ;
+    para[3].duty_cycle = 0;
+    para[3].freq       = PWM_FREQ;
+    para[4].duty_cycle = PWM_DUTY_CYCLE;
+    para[4].freq       = PWM_FREQ;
 
-    if(temperature>LAM_MAX_MIREDS_DEFAULT)
+    for (uint32_t i = 0; i < MAX_PWM_CHANNEL; i+=2)
     {
-        temperature=LAM_MAX_MIREDS_DEFAULT;
+        if (para[i].duty_cycle > PWM_DUTY_CYCLE)
+        {
+            para[i].duty_cycle = PWM_DUTY_CYCLE;
+        }
+        hosal_pwm_para_chg(rgbcw_pwm + i, para[i]);
     }
-    else if(temperature<LAM_MIN_MIREDS_DEFAULT)
-    {
-        temperature=LAM_MIN_MIREDS_DEFAULT;
-    }
-    
-    soft_temp_delta=temperature-LAM_MIN_MIREDS_DEFAULT;
-    soft_temp_delta*=100;
-
-    uint32_t warm = (254*(soft_temp_delta/hw_temp_delta))/100;
-    uint32_t clod  = 254-warm;
-    Wduty=(warm*12);
-    Cduty=(clod*12);
-    printf("now_Cduty update=%lx,now_Wduty update =%lx\r\n",Cduty,Wduty);
-    demo_hosal_pwm_set_param(0,0,0,Cduty,Wduty);
-#else
-    set_level(currLevel);
-#endif
-
+    Wduty=254*12;
+    Cduty=0;
 }
 
-void set_cold_temperature( uint8_t currLevel)
+void set_cold_temperature(void)
 {
     
-    uint16_t temperature=LAM_MIN_MIREDS_DEFAULT;
-#if MAX_PWM_CHANNEL
-    uint32_t hw_temp_delta=LAM_MAX_MIREDS_DEFAULT-LAM_MIN_MIREDS_DEFAULT;
-    uint32_t soft_temp_delta;
+    hosal_pwm_config_t para[5];
+    para[0].duty_cycle = 0;
+    para[0].freq       = PWM_FREQ;
+    para[1].duty_cycle = 0;
+    para[1].freq       = PWM_FREQ;
+    para[2].duty_cycle = 0;
+    para[2].freq       = PWM_FREQ;
+    para[3].duty_cycle = PWM_DUTY_CYCLE;
+    para[3].freq       = PWM_FREQ;
+    para[4].duty_cycle = 0;
+    para[4].freq       = PWM_FREQ;
 
-    if(temperature>LAM_MAX_MIREDS_DEFAULT)
+    for (uint32_t i = 0; i < MAX_PWM_CHANNEL; i+=2)
     {
-        temperature=LAM_MAX_MIREDS_DEFAULT;
+        if (para[i].duty_cycle > PWM_DUTY_CYCLE)
+        {
+            para[i].duty_cycle = PWM_DUTY_CYCLE;
+        }
+        hosal_pwm_para_chg(rgbcw_pwm + i, para[i]);
     }
-    else if(temperature<LAM_MIN_MIREDS_DEFAULT)
-    {
-        temperature=LAM_MIN_MIREDS_DEFAULT;
-    }
-    
-    soft_temp_delta=temperature-LAM_MIN_MIREDS_DEFAULT;
-    soft_temp_delta*=100;
-
-    uint32_t warm = (254*(soft_temp_delta/hw_temp_delta))/100;
-    uint32_t clod  = 254-warm;
-
-    Wduty=(warm*12);
-    Cduty=(clod*12);
-    printf("now_Cduty update=%lx,now_Wduty update =%lx\r\n",Cduty,Wduty);
-    demo_hosal_pwm_set_param(0,0,0,Cduty,Wduty);
-#else
-    set_level(currLevel);
-#endif
-
+    Wduty=0;
+    Cduty=254*12;
 }
+void set_warm_cold_off(void)
+{
+       hosal_pwm_config_t para[5];
+    para[0].duty_cycle = 0;
+    para[0].freq       = PWM_FREQ;
+    para[1].duty_cycle = 0;
+    para[1].freq       = PWM_FREQ;
+    para[2].duty_cycle = 0;
+    para[2].freq       = PWM_FREQ;
+    para[3].duty_cycle = 0;
+    para[3].freq       = PWM_FREQ;
+    para[4].duty_cycle = 0;
+    para[4].freq       = PWM_FREQ;
 
+    for (uint32_t i = 0; i < MAX_PWM_CHANNEL; i+=2)
+    {
+        if (para[i].duty_cycle > PWM_DUTY_CYCLE)
+        {
+            para[i].duty_cycle = PWM_DUTY_CYCLE;
+        }
+        hosal_pwm_para_chg(rgbcw_pwm + i, para[i]);
+    }
+    Wduty=0;
+    Cduty=0;
+}
 static void Light_TimerHandler(TimerHandle_t p_timerhdl)
 {
 
