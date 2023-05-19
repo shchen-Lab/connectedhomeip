@@ -40,19 +40,19 @@
 #ifdef BL706_NIGHT_LIGHT
 
 #define LED_B_PIN_PORT 0
-#define LED_B_PIN 22
+#define LED_B_PIN 0
 
-#define LED_R_PIN_PORT 0
+#define LED_R_PIN_PORT 3
 #define LED_R_PIN 3
 
-#define LED_G_PIN_PORT 0
+#define LED_G_PIN_PORT 4
 #define LED_G_PIN 9
 
-#define LED_C_PIN_PORT 0
-#define LED_C_PIN 20
+#define LED_C_PIN_PORT 1
+#define LED_C_PIN 21
 
-#define LED_W_PIN_PORT 0
-#define LED_W_PIN 21
+#define LED_W_PIN_PORT 2
+#define LED_W_PIN 22
 
 #define MAX_PWM_CHANNEL 5
 

@@ -403,7 +403,9 @@ void AppTask::LightingUpdate(app_event_t event)
             }
             else
             {
+#if 0
                 ef_set_env_blob(APP_LIGHT_TEMP_LEVEL, &temperature, sizeof(temperature));
+#endif
                 sLightLED.SetTemperature(v.Value(), temperature);
             }
 
@@ -454,18 +456,28 @@ void AppTask::LightingSetStatus(app_event_t status)
             vTaskDelay(100);
             temperature = LAM_MIN_MIREDS_DEFAULT;
             onoff       = true;
+            level       = 254;
             Clusters::ColorControl::Attributes::ColorTemperatureMireds::Set(endpoint, temperature);
+            Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
             Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
             isProvisioned = true;
             return;
         }
         else
         {
+            static bool isFristProvison = 0;
+#if 0
             size_t saved_value_len = 0;
             ef_get_env_blob(APP_LIGHT_TEMP_LEVEL, &temperature, sizeof(temperature), &saved_value_len);
-            onoff = true;
+            
             Clusters::ColorControl::Attributes::ColorTemperatureMireds::Set(endpoint, temperature);
-            Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
+#endif
+            if (isFristProvison == 0)
+            {
+                onoff = true;
+                Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
+                isFristProvison = 1;
+            }
         }
     }
 }
