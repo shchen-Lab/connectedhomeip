@@ -38,6 +38,8 @@ using namespace ::chip::DeviceLayer;
 #define APP_REBOOT_RESET_COUNT 6
 #define APP_REBOOT_RESET_COUNT_KEY "app_reset_cnt"
 
+#define APP_LIGHT_TEMP_LEVEL "app_temp_level"
+
 // Application-defined error codes in the CHIP_ERROR space.
 #define APP_ERROR_EVENT_QUEUE_FAILED CHIP_APPLICATION_ERROR(0x01)
 #define APP_ERROR_CREATE_TASK_FAILED CHIP_APPLICATION_ERROR(0x02)

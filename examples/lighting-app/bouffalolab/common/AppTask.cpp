@@ -403,6 +403,7 @@ void AppTask::LightingUpdate(app_event_t event)
             }
             else
             {
+                ef_set_env_blob(APP_LIGHT_TEMP_LEVEL, &temperature, sizeof(temperature));
                 sLightLED.SetTemperature(v.Value(), temperature);
             }
 
@@ -428,6 +429,7 @@ void AppTask::LightingSetOnoff(uint8_t bonoff)
 void AppTask::LightingSetStatus(app_event_t status)
 {
     uint8_t level, hue, sat;
+    uint16_t temperature;
     bool onoff                = true;
     EndpointId endpoint       = GetAppTask().GetEndpointId();
     static bool isProvisioned = true;
@@ -448,16 +450,21 @@ void AppTask::LightingSetStatus(app_event_t status)
 
         if (isProvisioned == false)
         {
-            GetAppTask().ProvisionLightTimerStart();
+            set_warm_cold_off();
+            vTaskDelay(100);
+            temperature = LAM_MIN_MIREDS_DEFAULT;
+            onoff       = true;
+            Clusters::ColorControl::Attributes::ColorTemperatureMireds::Set(endpoint, temperature);
+            Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
             isProvisioned = true;
             return;
         }
         else
         {
-
+            size_t saved_value_len = 0;
+            ef_get_env_blob(APP_LIGHT_TEMP_LEVEL, &temperature, sizeof(temperature), &saved_value_len);
             onoff = true;
-            level = 254;
-            Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
+            Clusters::ColorControl::Attributes::ColorTemperatureMireds::Set(endpoint, temperature);
             Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
         }
     }
@@ -681,22 +688,6 @@ void AppTask::ProvisionLightTimerCallback(TimerHandle_t xTimer)
             set_cold_temperature();
             ChipLogError(NotSpecified, "set_cold_temperature");
             ProvisionLightTimerStop();
-        }
-    }
-    else
-    {
-
-        if (GetAppTask().ProvisionLightTimer_Count == 0)
-        {
-            set_warm_cold_off();
-            ChipLogError(NotSpecified, "set_coldwarm off");
-        }
-        else
-        {
-            set_cold_temperature();
-            ChipLogError(NotSpecified, "set_cold_temperature");
-            ProvisionLightTimerStop();
-            GetAppTask().PostEvent(APP_EVENT_SYS_PROVISIONED);
         }
     }
     GetAppTask().ProvisionLightTimer_Count++;
