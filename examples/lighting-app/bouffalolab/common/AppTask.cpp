@@ -160,6 +160,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     ef_get_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt), &saved_value_len);
     resetCnt++;
     ef_set_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt));
+    ChipLogProgress(NotSpecified, "resetCnt %ld \r\n", resetCnt);
 #endif
 
     ChipLogProgress(NotSpecified, "Starting Platform Manager Event Loop");
@@ -406,7 +407,10 @@ void AppTask::LightingUpdate(app_event_t event)
 #if 0
                 ef_set_env_blob(APP_LIGHT_TEMP_LEVEL, &temperature, sizeof(temperature));
 #endif
-                sLightLED.SetTemperature(v.Value(), temperature);
+                // if (GetAppTask().mIsConnected == true)
+                {
+                    sLightLED.SetTemperature(v.Value(), temperature);
+                }
             }
 
 #else
