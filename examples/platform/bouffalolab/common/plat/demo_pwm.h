@@ -22,8 +22,8 @@ void set_temperature(uint8_t currLevel, uint16_t temperature);
 void set_warm_temperature(void);
 void set_cold_temperature(void);
 void set_warm_cold_off(void);
-#define LAM_MAX_MIREDS_DEFAULT 490
-#define LAM_MIN_MIREDS_DEFAULT 140
+#define LAM_MAX_MIREDS_DEFAULT 454
+#define LAM_MIN_MIREDS_DEFAULT 154
 #ifdef __cplusplus
 }
 #endif
