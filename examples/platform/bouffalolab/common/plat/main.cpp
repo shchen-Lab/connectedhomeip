@@ -64,7 +64,6 @@ extern "C" {
 #endif
 
 #include "board.h"
-
 }
 
 using namespace ::chip;
@@ -302,13 +301,14 @@ extern "C" void do_psram_test()
 #endif
 
 #ifdef BL702L_ENABLE
-void  exception_entry_app(uint32_t mcause, uint32_t mepc, uint32_t mtval, uintptr_t *regs, uintptr_t *tasksp)
+void exception_entry_app(uint32_t mcause, uint32_t mepc, uint32_t mtval, uintptr_t * regs, uintptr_t * tasksp)
 {
-    static const char dbg_str[] = "Exception Entry--->>>\r\n mcause %08lx, mepc %08lx, mtval %08lx\r\n" ;
+    static const char dbg_str[] = "Exception Entry--->>>\r\n mcause %08lx, mepc %08lx, mtval %08lx\r\n";
 
     printf(dbg_str, mcause, mepc, mtval);
 
-    while (1) {
+    while (1)
+    {
         /*dead loop now*/
     }
 }
@@ -327,7 +327,7 @@ extern "C" void setup_heap()
     extern uint8_t _rom_data_run;
     extern uint8_t _rom_data_load;
     extern uint8_t _rom_data_size;
-    memcpy((void *)&_rom_data_run, (void *)&_rom_data_load, (size_t)&_rom_data_size);
+    memcpy((void *) &_rom_data_run, (void *) &_rom_data_load, (size_t) &_rom_data_size);
 #endif
 
     vPortDefineHeapRegions(xHeapRegions);
@@ -363,9 +363,9 @@ extern "C" void app_init(void)
     ChipLogProgress(NotSpecified, "==================================================");
 
 #ifdef CFG_USE_PSRAM
-    ChipLogProgress(NotSpecified, "Heap %u@[%p:%p], %u@[%p:%p]", (unsigned int) &_heap_size, 
-                    &_heap_start, &_heap_start + (unsigned int) &_heap_size, (unsigned int) &_heap3_size,
-                    &_heap3_start, &_heap3_start + (unsigned int) &_heap3_size);
+    ChipLogProgress(NotSpecified, "Heap %u@[%p:%p], %u@[%p:%p]", (unsigned int) &_heap_size, &_heap_start,
+                    &_heap_start + (unsigned int) &_heap_size, (unsigned int) &_heap3_size, &_heap3_start,
+                    &_heap3_start + (unsigned int) &_heap3_size);
 #else
     ChipLogProgress(NotSpecified, "Heap %u@[%p:%p]", (unsigned int) &_heap_size, &_heap_start,
                     &_heap_start + (unsigned int) &_heap_size);
@@ -375,7 +375,7 @@ extern "C" void app_init(void)
     bl_irq_init();
     bl_rtc_init();
     bl_sec_init();
-#if defined(BL702_ENABLE) || defined(BL702L_ENABLE) 
+#if defined(BL702_ENABLE)
     bl_timer_init();
 #endif
 
