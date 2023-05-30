@@ -32,14 +32,16 @@ using namespace ::chip::DeviceLayer;
 
 #define APP_BUTTON_PRESS_JITTER 50
 #define APP_BUTTON_PRESS_SHORT 1000
-#define APP_BUTTON_PRESS_LONG 4000
+#define APP_BUTTON_PRESS_LONG 2000
 
 #define APP_LIGHT_ENDPOINT_ID 1
 #define APP_REBOOT_RESET_COUNT 6
 #define APP_REBOOT_RESET_COUNT_KEY "app_reset_cnt"
 
-#define APP_LIGHT_TEMP_LEVEL "app_temp_level"
+#define APP_LIGHT_TEMP "app_light_temp"
+#define APP_LIGHT_LEVEL "app_light_level"
 
+#define APP_LIGHT_PROVISION "app_light_provision"
 // Application-defined error codes in the CHIP_ERROR space.
 #define APP_ERROR_EVENT_QUEUE_FAILED CHIP_APPLICATION_ERROR(0x01)
 #define APP_ERROR_CREATE_TASK_FAILED CHIP_APPLICATION_ERROR(0x02)
@@ -151,7 +153,7 @@ private:
     uint64_t mButtonPressedTime;
     bool mIsFactoryResetIndicat;
     bool mIsConnected;
-
+    bool isProvisioned = true;
     TimerHandle_t ProvisionLightTimer;
     uint8_t ProvisionLightTimer_Count;
 

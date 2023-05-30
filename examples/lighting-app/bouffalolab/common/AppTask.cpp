@@ -150,18 +150,31 @@ void AppTask::AppTaskMain(void * pvParameter)
     bool isStateReady = false;
 
     sLightLED.Init();
-
+    size_t saved_value_len = 0;
 #ifdef LED_BTN_RESET
     ButtonInit();
 #else
-
+    
     uint32_t resetCnt      = 0;
-    size_t saved_value_len = 0;
+   
     ef_get_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt), &saved_value_len);
     resetCnt++;
     ef_set_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt));
     ChipLogProgress(NotSpecified, "resetCnt %ld \r\n", resetCnt);
 #endif
+    saved_value_len = 0;
+    GetAppTask().isProvisioned=false;
+    ef_get_env_blob(APP_LIGHT_PROVISION, &GetAppTask().isProvisioned, sizeof(GetAppTask().isProvisioned), &saved_value_len);
+    if(GetAppTask().isProvisioned==true)
+    {
+        uint8_t level;
+        uint16_t temperature;
+        saved_value_len = 0;
+        ef_get_env_blob(APP_LIGHT_TEMP, &temperature, sizeof(temperature), &saved_value_len);
+        saved_value_len = 0;
+        ef_get_env_blob(APP_LIGHT_LEVEL, &level, sizeof(level), &saved_value_len);
+        sLightLED.SetTemperature(level, temperature);
+    }
 
     ChipLogProgress(NotSpecified, "Starting Platform Manager Event Loop");
     CHIP_ERROR ret = PlatformMgr().StartEventLoopTask();
@@ -367,7 +380,7 @@ void AppTask::LightingUpdate(app_event_t event)
         {
             break;
         }
-
+#if 0
         if (EMBER_ZCL_STATUS_SUCCESS != Clusters::ColorControl::Attributes::CurrentHue::Get(endpoint, &hue))
         {
             break;
@@ -377,6 +390,7 @@ void AppTask::LightingUpdate(app_event_t event)
         {
             break;
         }
+#endif
         if (EMBER_ZCL_STATUS_SUCCESS != Clusters::ColorControl::Attributes::ColorTemperatureMireds::Get(endpoint, &temperature))
         {
             break;
@@ -387,7 +401,10 @@ void AppTask::LightingUpdate(app_event_t event)
         }
         if (!onoff)
         {
-            sLightLED.SetLevel(0, colormode);
+            if (GetAppTask().mIsConnected == true)
+            {
+                sLightLED.SetLevel(0, colormode);
+            }
         }
         else
         {
@@ -404,10 +421,8 @@ void AppTask::LightingUpdate(app_event_t event)
             }
             else
             {
-#if 0
-                ef_set_env_blob(APP_LIGHT_TEMP_LEVEL, &temperature, sizeof(temperature));
-#endif
-                // if (GetAppTask().mIsConnected == true)
+
+                if (GetAppTask().mIsConnected == true)
                 {
                     sLightLED.SetTemperature(v.Value(), temperature);
                 }
@@ -416,6 +431,8 @@ void AppTask::LightingUpdate(app_event_t event)
 #else
             sLightLED.SetLevel(v.Value());
 #endif
+            ef_set_env_blob(APP_LIGHT_TEMP, &temperature, sizeof(temperature));
+            ef_set_env_blob(APP_LIGHT_LEVEL, &v.Value(), sizeof(v.Value()));
         }
 
     } while (0);
@@ -438,7 +455,7 @@ void AppTask::LightingSetStatus(app_event_t status)
     uint16_t temperature;
     bool onoff                = true;
     EndpointId endpoint       = GetAppTask().GetEndpointId();
-    static bool isProvisioned = true;
+    
 
     if (APP_EVENT_SYS_LIGHT_TOGGLE == status)
     {
@@ -449,39 +466,33 @@ void AppTask::LightingSetStatus(app_event_t status)
     else if (APP_EVENT_SYS_BLE_ADV == status)
     {
         GetAppTask().ProvisionLightTimerStart();
-        isProvisioned = false;
+        GetAppTask().isProvisioned = false;
+        ef_set_env_blob(APP_LIGHT_PROVISION, &GetAppTask().isProvisioned, sizeof( GetAppTask().isProvisioned));
     }
     else if (APP_EVENT_SYS_PROVISIONED == status)
     {
 
-        if (isProvisioned == false)
+        if (GetAppTask().isProvisioned == false)
         {
             set_warm_cold_off();
             vTaskDelay(100);
-            temperature = LAM_MIN_MIREDS_DEFAULT;
+            set_cold_temperature();
+            temperature = 370;
             onoff       = true;
             level       = 254;
             Clusters::ColorControl::Attributes::ColorTemperatureMireds::Set(endpoint, temperature);
             Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
             Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
-            isProvisioned = true;
+            GetAppTask().isProvisioned = true;
+            ef_set_env_blob(APP_LIGHT_PROVISION, & GetAppTask().isProvisioned, sizeof( GetAppTask().isProvisioned));
             return;
         }
         else
         {
-            static bool isFristProvison = 0;
-#if 0
-            size_t saved_value_len = 0;
-            ef_get_env_blob(APP_LIGHT_TEMP_LEVEL, &temperature, sizeof(temperature), &saved_value_len);
-            
-            Clusters::ColorControl::Attributes::ColorTemperatureMireds::Set(endpoint, temperature);
-#endif
-            if (isFristProvison == 0)
-            {
-                onoff = true;
-                Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
-                isFristProvison = 1;
-            }
+            GetAppTask().isProvisioned = true;
+            ef_set_env_blob(APP_LIGHT_PROVISION, & GetAppTask().isProvisioned, sizeof( GetAppTask().isProvisioned));
+            onoff = true;
+            Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
         }
     }
 }
