@@ -431,8 +431,12 @@ void AppTask::LightingUpdate(app_event_t event)
 #else
             sLightLED.SetLevel(v.Value());
 #endif
-            ef_set_env_blob(APP_LIGHT_TEMP, &temperature, sizeof(temperature));
-            ef_set_env_blob(APP_LIGHT_LEVEL, &v.Value(), sizeof(v.Value()));
+            if (GetAppTask().mIsConnected == true)
+            {
+                ef_set_env_blob(APP_LIGHT_TEMP, &temperature, sizeof(temperature));
+                ef_set_env_blob(APP_LIGHT_LEVEL, &v.Value(), sizeof(v.Value()));
+            }
+  
         }
 
     } while (0);
