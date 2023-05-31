@@ -86,7 +86,7 @@ bouffalolab_executable("lighting_app") {
   bl_plat_name = "bl702l"
 
   defines = [
-    "APP_TASK_STACK_SIZE=1536",
+    "APP_TASK_STACK_SIZE=2044",
     "CHIP_UART_BAUDRATE=${baudrate}",
     "BL702L_ENABLE",
     "START_ENTRY=bl702_main",
