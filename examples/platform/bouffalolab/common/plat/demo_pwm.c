@@ -373,6 +373,24 @@ static void hard_set_color(uint8_t currLevel, uint8_t currHue, uint8_t currSat)
     set_level(currLevel);
 #endif
 }
+int get_curve_value(uint32_t temp)
+{
+    int value   = 0;
+    float temp1 = (float) (temp) / 254.000;
+    temp1       = temp1 * 100;
+
+    printf("temp1 %f\r\n", temp1);
+
+    while (1)
+    {
+        if ((pwm_curve[value] <= temp1) && (pwm_curve[value + 1] >= temp1))
+        {
+            break;
+        }
+        value++;
+    }
+    return value;
+}
 void set_color(uint8_t currLevel, uint8_t currHue, uint8_t currSat)
 {
     printf("%s\r\n", __func__);
@@ -470,8 +488,11 @@ void set_temperature(uint8_t currLevel, uint16_t temperature)
 
         uint32_t warm = (254 * (soft_temp_delta / hw_temp_delta)) / 100;
         uint32_t clod = 254 - warm;
-        new_Wduty     = warm * 12 * currLevel / 254;
-        new_Cduty     = clod * 12 * currLevel / 254;
+
+        warm      = warm * currLevel / 254;
+        clod      = clod * currLevel / 254;
+        new_Wduty = get_curve_value(warm);
+        new_Wduty = get_curve_value(clod);
         printf("now_Cduty update=%lx,now_Wduty update =%lx\r\n", new_Cduty, new_Wduty);
         if (Light_TimerHdl != NULL)
         {
@@ -513,17 +534,15 @@ void set_warm_temperature()
     uint32_t warm = (254 * (soft_temp_delta / hw_temp_delta)) / 100;
     uint32_t clod = 254 - warm;
 
-    Wduty      = warm * 12;
-    Cduty      = clod * 12;
-    threshold1 = 0;
-    Rduty      = 0;
-    Gduty      = 0;
-    Bduty      = 0;
+    Cduty = get_curve_value(clod);
+    Wduty = get_curve_value(warm);
+    Rduty = 0;
+    Gduty = 0;
+    Bduty = 0;
     printf("now_Cduty update=%lx,now_Wduty update =%lx\r\n", Cduty, Wduty);
     bl_pwm_set_duty(LED_R_PIN_PORT, pwm_curve[Rduty]);
     bl_pwm_set_duty(LED_G_PIN_PORT, pwm_curve[Gduty]);
     bl_pwm_set_duty(LED_B_PIN_PORT, pwm_curve[Bduty]);
-
     bl_pwm_set_duty_ex(LED_C_PIN_PORT, pwm_curve[Cduty], &threshold1, &threshold2);
     threshold1 = threshold2;
     bl_pwm_set_duty_ex(LED_W_PIN_PORT, pwm_curve[Wduty], &threshold1, &threshold2);
@@ -552,8 +571,8 @@ void set_cold_temperature(void)
     uint32_t warm = (254 * (soft_temp_delta / hw_temp_delta)) / 100;
     uint32_t clod = 254 - warm;
 
-    Wduty      = warm * 12;
-    Cduty      = clod * 12;
+    Cduty      = get_curve_value(clod);
+    Wduty      = get_curve_value(warm);
     threshold1 = 0;
     Rduty      = 0;
     Gduty      = 0;
@@ -562,7 +581,6 @@ void set_cold_temperature(void)
     bl_pwm_set_duty(LED_R_PIN_PORT, pwm_curve[Rduty]);
     bl_pwm_set_duty(LED_G_PIN_PORT, pwm_curve[Gduty]);
     bl_pwm_set_duty(LED_B_PIN_PORT, pwm_curve[Bduty]);
-
     bl_pwm_set_duty_ex(LED_C_PIN_PORT, pwm_curve[Cduty], &threshold1, &threshold2);
     threshold1 = threshold2;
     bl_pwm_set_duty_ex(LED_W_PIN_PORT, pwm_curve[Wduty], &threshold1, &threshold2);
