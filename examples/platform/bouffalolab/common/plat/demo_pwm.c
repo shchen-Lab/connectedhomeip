@@ -492,7 +492,7 @@ void set_temperature(uint8_t currLevel, uint16_t temperature)
         warm      = warm * currLevel / 254;
         clod      = clod * currLevel / 254;
         new_Wduty = get_curve_value(warm);
-        new_Wduty = get_curve_value(clod);
+        new_Cduty = get_curve_value(clod);
         printf("now_Cduty update=%lx,now_Wduty update =%lx\r\n", new_Cduty, new_Wduty);
         if (Light_TimerHdl != NULL)
         {
@@ -533,9 +533,10 @@ void set_warm_temperature()
 
     uint32_t warm = (254 * (soft_temp_delta / hw_temp_delta)) / 100;
     uint32_t clod = 254 - warm;
-
-    Cduty = get_curve_value(clod);
-    Wduty = get_curve_value(warm);
+    Cduty         = 0;
+    Wduty         = 0xbe7;
+    // Cduty = get_curve_value(clod);
+    // Wduty = get_curve_value(warm);
     Rduty = 0;
     Gduty = 0;
     Bduty = 0;
@@ -570,9 +571,10 @@ void set_cold_temperature(void)
 
     uint32_t warm = (254 * (soft_temp_delta / hw_temp_delta)) / 100;
     uint32_t clod = 254 - warm;
-
-    Cduty      = get_curve_value(clod);
-    Wduty      = get_curve_value(warm);
+    Cduty         = 0x8a5;
+    Wduty         = 0xB0B;
+    // Cduty      = get_curve_value(clod);
+    // Wduty      = get_curve_value(warm);
     threshold1 = 0;
     Rduty      = 0;
     Gduty      = 0;

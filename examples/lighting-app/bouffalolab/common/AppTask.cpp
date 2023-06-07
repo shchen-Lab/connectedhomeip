@@ -433,6 +433,7 @@ void AppTask::LightingUpdate(app_event_t event)
 #endif
             if (GetAppTask().mIsConnected == true)
             {
+               // vTaskDelay(50);
                 ef_set_env_blob(APP_LIGHT_TEMP, &temperature, sizeof(temperature));
                 ef_set_env_blob(APP_LIGHT_LEVEL, &v.Value(), sizeof(v.Value()));
             }
