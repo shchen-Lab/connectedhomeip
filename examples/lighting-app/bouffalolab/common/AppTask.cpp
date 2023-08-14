@@ -145,7 +145,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     uint32_t resetCnt      = 0;
     size_t saved_value_len = 0;
     ef_get_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt), &saved_value_len);
-
+    ChipLogProgress(NotSpecified, "resetCnt =%ld\r\n",resetCnt);
     if (resetCnt > APP_REBOOT_RESET_COUNT)
     {
         resetCnt = 0;

@@ -47,7 +47,7 @@ declare_args() {
   ota_auto_reboot_delay_seconds = 5
 
   enable_heap_monitoring = false
-  enable_reset_counter = false
+  enable_reset_counter = true
 
   setupPinCode = 20202021
   setupDiscriminator = 3840
