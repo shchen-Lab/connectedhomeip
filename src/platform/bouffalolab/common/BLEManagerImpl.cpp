@@ -64,7 +64,14 @@ const ChipBleUUID chipUUID_CHIPoBLEChar_TX = { { 0x18, 0xEE, 0x2E, 0xF5, 0x26, 0
 const bt_uuid_128 UUID128_CHIPoBLEChar_C3 =
     BT_UUID_INIT_128(0x04, 0x8F, 0x21, 0x83, 0x8A, 0x74, 0x7D, 0xB8, 0xF2, 0x45, 0x72, 0x87, 0x38, 0x02, 0x63, 0x64);
 #endif
-
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+bt_uuid_16 UUID16_BLoBLEService = BT_UUID_INIT_16(0xFFF0);
+const bt_uuid_16 UUID16_BLoBLEChar_RX =BT_UUID_INIT_16(0xFFF1);
+const bt_uuid_16 UUID16_BLoBLEChar_TX =BT_UUID_INIT_16(0xFFF2);
+_bt_gatt_ccc BLoBLEChar_TX_CCC = BT_GATT_CCC_INITIALIZER(nullptr, BLEManagerImpl::HandleBLTXCCCWrite, nullptr);
+static const int kBLoBLE_CCC_AttributeIndex = 8;
+static bool bl_custom_flag=false;
+#endif
 _bt_gatt_ccc CHIPoBLEChar_TX_CCC = BT_GATT_CCC_INITIALIZER(nullptr, BLEManagerImpl::HandleTXCCCWrite, nullptr);
 
 struct bt_gatt_attr sChipoBleAttributes[] = {
@@ -77,6 +84,14 @@ struct bt_gatt_attr sChipoBleAttributes[] = {
     BT_GATT_CHARACTERISTIC(&UUID128_CHIPoBLEChar_C3.uuid, BT_GATT_CHRC_READ, BT_GATT_PERM_READ, BLEManagerImpl::HandleC3Read,
                            nullptr, nullptr),
 #endif
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+    BT_GATT_PRIMARY_SERVICE(&UUID16_BLoBLEService.uuid),
+    BT_GATT_CHARACTERISTIC(&UUID16_BLoBLEChar_RX.uuid, BT_GATT_CHRC_WRITE | BT_GATT_CHRC_WRITE_WITHOUT_RESP,
+                           BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, nullptr, BLEManagerImpl::HandleBLRXWrite, nullptr),
+    BT_GATT_CHARACTERISTIC(&UUID16_BLoBLEChar_TX.uuid, BT_GATT_CHRC_INDICATE, BT_GATT_PERM_NONE, nullptr, nullptr, nullptr),
+    BT_GATT_CCC_MANAGED(&BLoBLEChar_TX_CCC, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+#endif
+
 };
 
 struct bt_gatt_service sChipoBleService = {
@@ -456,6 +471,12 @@ CHIP_ERROR BLEManagerImpl::HandleGAPDisconnect(const ChipDeviceEvent * event)
     }
 
 exit:
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+    if(bl_custom_flag==true)
+    {
+        return CHIP_NO_ERROR;
+    }
+#endif
     // Unref bt_conn before scheduling DriveBLEState.
     bt_conn_unref(connEvent->BtConn);
 
@@ -784,7 +805,9 @@ bool BLEManagerImpl::HandleTXCCCWrite(struct bt_conn * conId, const struct bt_ga
     event.Platform.BleCCCWriteEvent.Value  = value;
 
     PlatformMgr().PostEventOrDie(&event);
-
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+    bl_custom_flag=false;
+#endif
     return sizeof(value);
 }
 
@@ -798,7 +821,56 @@ void BLEManagerImpl::HandleTXIndicated(struct bt_conn * conId, IndicationAttrTyp
 
     PlatformMgr().PostEventOrDie(&event);
 }
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+ssize_t BLEManagerImpl::HandleBLRXWrite(struct bt_conn * conId, const struct bt_gatt_attr * attr, const void * buf, uint16_t len,
+                                      uint16_t offset, uint8_t flags)
+{
+    bl_custom_flag=true;
+    return len;
+}
+bool BLEManagerImpl::HandleBLTXCCCWrite(struct bt_conn * conId, const struct bt_gatt_attr * attr, uint16_t value)
+{
+    if (value != BT_GATT_CCC_INDICATE && value != 0)
+    {
+        return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
+    }
 
+    return sizeof(value);
+}
+
+
+bool BLEManagerImpl::BLSendIndication(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
+                                    PacketBufferHandle pBuf)
+{
+    CHIP_ERROR err                   = CHIP_NO_ERROR;
+    int status                       = 0;
+    uint8_t index                    = bt_conn_index(conId);
+    bt_gatt_indicate_params * params = &mIndicateParams[index];
+
+    VerifyOrExit(IsSubscribed(conId) == true, err = CHIP_ERROR_INVALID_ARGUMENT);
+
+    ChipLogDetail(DeviceLayer, "Sending indication for CHIPoBLE TX characteristic (ConnId %02x, len %u)", index,
+                  pBuf->DataLength());
+
+    params->uuid = nullptr;
+    params->attr = &sChipoBleAttributes[kBLoBLE_CCC_AttributeIndex];
+    params->func = HandleTXIndicated;
+    params->data = pBuf->Start();
+    params->len  = pBuf->DataLength();
+
+    status = bt_gatt_indicate(conId, params);
+    VerifyOrExit(status == 0, err = MapErrorZephyr(status));
+
+exit:
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "BLEManagerImpl::SendIndication() failed: %." CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(DeviceLayer, "BLEManagerImpl::SendIndication() failed: %d", status);
+    }
+
+    return err == CHIP_NO_ERROR;
+}
+#endif
 void BLEManagerImpl::HandleConnect(struct bt_conn * conId, uint8_t err)
 {
     ChipDeviceEvent event;
@@ -823,7 +895,9 @@ void BLEManagerImpl::HandleDisconnect(struct bt_conn * conId, uint8_t reason)
     ChipDeviceEvent event;
 
     PlatformMgr().LockChipStack();
-
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+    bl_custom_flag=false;
+#endif
     // Don't handle BLE disconnecting events when it is not related to CHIPoBLE
     VerifyOrExit(sInstance.mFlags.Has(Flags::kChipoBleGattServiceRegister), );
 
@@ -832,7 +906,6 @@ void BLEManagerImpl::HandleDisconnect(struct bt_conn * conId, uint8_t reason)
     event.Platform.BleConnEvent.HciResult = reason;
 
     PlatformMgr().PostEventOrDie(&event);
-
 exit:
     PlatformMgr().UnlockChipStack();
 }

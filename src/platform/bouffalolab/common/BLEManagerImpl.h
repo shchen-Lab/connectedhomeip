@@ -63,6 +63,10 @@ private:
     uint16_t GetMTU(BLE_CONNECTION_OBJECT conId) const;
     bool SendIndication(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
                         PacketBufferHandle pBuf);
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+    bool BLSendIndication(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
+                                    PacketBufferHandle pBuf);
+#endif
     bool SendWriteRequest(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
                           PacketBufferHandle pBuf);
     bool SendReadRequest(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
@@ -82,8 +86,7 @@ private:
         kAdvertisingEnabled     = 0x0002, /**< The application has enabled CHIPoBLE advertising. */
         kFastAdvertisingEnabled = 0x0004, /**< The application has enabled fast advertising. */
         kAdvertising            = 0x0008, /**< The system is currently CHIPoBLE advertising. */
-        kAdvertisingRefreshNeeded =
-            0x0010, /**< The advertising state/configuration has changed, but the SoftDevice has yet to be updated. */
+        kAdvertisingRefreshNeeded =0x0010, /**< The advertising state/configuration has changed, but the SoftDevice has yet to be updated. */
         kChipoBleGattServiceRegister = 0x0020, /**< The system has currently CHIPoBLE GATT service registered. */
         kChipoBleShutDown= 0x0040, /**< The system has disable ble stack. */
     };
@@ -137,7 +140,11 @@ public:
     static ssize_t HandleRXWrite(bt_conn * conn, const bt_gatt_attr * attr, const void * buf, uint16_t len, uint16_t offset,
                                  uint8_t flags);
     static bool HandleTXCCCWrite(bt_conn * conn, const bt_gatt_attr * attr, uint16_t value);
-
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+    static ssize_t HandleBLRXWrite(bt_conn * conn, const bt_gatt_attr * attr, const void * buf, uint16_t len, uint16_t offset,
+                                 uint8_t flags);
+    static bool HandleBLTXCCCWrite(bt_conn * conn, const bt_gatt_attr * attr, uint16_t value);
+#endif
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     static ssize_t HandleC3Read(struct bt_conn * conn, const struct bt_gatt_attr * attr, void * buf, uint16_t len, uint16_t offset);
 #endif
