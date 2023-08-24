@@ -40,7 +40,9 @@ extern "C" {
 #include <hci_driver.h>
 
 #include "BLEManagerImpl.h"
-
+#ifdef BOUFFALOLAB_BLE_PRO_ENABLE
+#include "NetworkCommissioningDriver.h"
+#endif
 using namespace ::chip;
 using namespace ::chip::Ble;
 using namespace ::chip::System;
@@ -826,6 +828,14 @@ ssize_t BLEManagerImpl::HandleBLRXWrite(struct bt_conn * conId, const struct bt_
                                       uint16_t offset, uint8_t flags)
 {
     bl_custom_flag=true;
+    #ifdef BOUFFALOLAB_BLE_PRO_ENABLE
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    const char *ssid="HUAWEI-10G70W";
+    const char *password="Wa1987Wj";
+    CHIP_ERROR error = chip::DeviceLayer::NetworkCommissioning::BLWiFiDriver::GetInstance().ConnectWiFiNetwork(
+    ssid, strlen(ssid), password, strlen(password));
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+    #endif
     return len;
 }
 bool BLEManagerImpl::HandleBLTXCCCWrite(struct bt_conn * conId, const struct bt_gatt_attr * attr, uint16_t value)
