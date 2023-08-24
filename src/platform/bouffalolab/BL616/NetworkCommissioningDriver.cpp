@@ -49,7 +49,6 @@ CHIP_ERROR BLWiFiDriver::Init(NetworkStatusChangeCallback * networkStatusChangeC
 
     mSavedNetwork.credentialsLen = credentialsLen;
     mSavedNetwork.ssidLen        = ssidLen;
-
     mStagingNetwork        = mSavedNetwork;
     mpScanCallback         = nullptr;
     mpConnectCallback      = nullptr;
@@ -72,6 +71,8 @@ void BLWiFiDriver::Shutdown()
 
 CHIP_ERROR BLWiFiDriver::CommitConfiguration()
 {
+    if (ConnectivityManagerImpl().GetWiFiStationState() == ConnectivityManager::kWiFiStationState_Connected)
+        return CHIP_NO_ERROR;
     ChipLogProgress(NetworkProvisioning, "BLWiFiDriver::CommitConfiguration");
     ReturnErrorOnFailure(
         PersistedStorage::KeyValueStoreMgr().Put(BLConfig::kConfigKey_WiFiSSID, mStagingNetwork.ssid, mStagingNetwork.ssidLen));
@@ -80,7 +81,24 @@ CHIP_ERROR BLWiFiDriver::CommitConfiguration()
     mSavedNetwork = mStagingNetwork;
     return CHIP_NO_ERROR;
 }
+#ifdef BOUFFALOLAB_BLE_PRO_ENABLE
+CHIP_ERROR BLWiFiDriver::Custom_CommitConfiguration(ByteSpan ssid, ByteSpan credentials)
+{
+    ChipLogProgress(NetworkProvisioning, "BLWiFiDriver::Custom_CommitConfiguration");
 
+    memcpy(mStagingNetwork.credentials, credentials.data(), credentials.size());
+    mStagingNetwork.credentialsLen = static_cast<decltype(mStagingNetwork.credentialsLen)>(credentials.size());
+
+    memcpy(mStagingNetwork.ssid, ssid.data(), ssid.size());
+    mStagingNetwork.ssidLen = static_cast<decltype(mStagingNetwork.ssidLen)>(ssid.size());
+    ReturnErrorOnFailure(
+        PersistedStorage::KeyValueStoreMgr().Put(BLConfig::kConfigKey_WiFiSSID, mStagingNetwork.ssid, mStagingNetwork.ssidLen));
+    ReturnErrorOnFailure(PersistedStorage::KeyValueStoreMgr().Put(BLConfig::kConfigKey_WiFiPassword, mStagingNetwork.credentials,
+                                                                  mStagingNetwork.credentialsLen));
+    mSavedNetwork = mStagingNetwork;
+    return CHIP_NO_ERROR;
+}
+#endif
 CHIP_ERROR BLWiFiDriver::RevertConfiguration()
 {
     mStagingNetwork = mSavedNetwork;

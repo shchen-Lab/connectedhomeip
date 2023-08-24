@@ -72,7 +72,7 @@ const bt_uuid_16 UUID16_BLoBLEChar_RX =BT_UUID_INIT_16(0xFFF1);
 const bt_uuid_16 UUID16_BLoBLEChar_TX =BT_UUID_INIT_16(0xFFF2);
 _bt_gatt_ccc BLoBLEChar_TX_CCC = BT_GATT_CCC_INITIALIZER(nullptr, BLEManagerImpl::HandleBLTXCCCWrite, nullptr);
 static const int kBLoBLE_CCC_AttributeIndex = 8;
-static bool bl_custom_flag=false;
+static bool mCustom_BLE=false;
 #endif
 _bt_gatt_ccc CHIPoBLEChar_TX_CCC = BT_GATT_CCC_INITIALIZER(nullptr, BLEManagerImpl::HandleTXCCCWrite, nullptr);
 
@@ -474,7 +474,7 @@ CHIP_ERROR BLEManagerImpl::HandleGAPDisconnect(const ChipDeviceEvent * event)
 
 exit:
 #if BOUFFALOLAB_BLE_DATA_ENABLE
-    if(bl_custom_flag==true)
+    if(mCustom_BLE==true)
     {
         return CHIP_NO_ERROR;
     }
@@ -808,7 +808,7 @@ bool BLEManagerImpl::HandleTXCCCWrite(struct bt_conn * conId, const struct bt_ga
 
     PlatformMgr().PostEventOrDie(&event);
 #if BOUFFALOLAB_BLE_DATA_ENABLE
-    bl_custom_flag=false;
+    mCustom_BLE=false;
 #endif
     return sizeof(value);
 }
@@ -827,15 +827,20 @@ void BLEManagerImpl::HandleTXIndicated(struct bt_conn * conId, IndicationAttrTyp
 ssize_t BLEManagerImpl::HandleBLRXWrite(struct bt_conn * conId, const struct bt_gatt_attr * attr, const void * buf, uint16_t len,
                                       uint16_t offset, uint8_t flags)
 {
-    bl_custom_flag=true;
-    #ifdef BOUFFALOLAB_BLE_PRO_ENABLE
+    mCustom_BLE=true;
+#ifdef BOUFFALOLAB_BLE_PRO_ENABLE
+//Test 
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     const char *ssid="HUAWEI-10G70W";
     const char *password="Wa1987Wj";
     CHIP_ERROR error = chip::DeviceLayer::NetworkCommissioning::BLWiFiDriver::GetInstance().ConnectWiFiNetwork(
     ssid, strlen(ssid), password, strlen(password));
+
+    ByteSpan custom_ssid((uint8_t*)ssid, (uint32_t)strlen(ssid));
+    ByteSpan custom_credentials((uint8_t*)password, (uint32_t)strlen(password));
+    error=chip::DeviceLayer::NetworkCommissioning::BLWiFiDriver::GetInstance().Custom_CommitConfiguration(custom_ssid,custom_credentials);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
-    #endif
+#endif
     return len;
 }
 bool BLEManagerImpl::HandleBLTXCCCWrite(struct bt_conn * conId, const struct bt_gatt_attr * attr, uint16_t value)
@@ -906,7 +911,7 @@ void BLEManagerImpl::HandleDisconnect(struct bt_conn * conId, uint8_t reason)
 
     PlatformMgr().LockChipStack();
 #if BOUFFALOLAB_BLE_DATA_ENABLE
-    bl_custom_flag=false;
+    mCustom_BLE=false;
 #endif
     // Don't handle BLE disconnecting events when it is not related to CHIPoBLE
     VerifyOrExit(sInstance.mFlags.Has(Flags::kChipoBleGattServiceRegister), );

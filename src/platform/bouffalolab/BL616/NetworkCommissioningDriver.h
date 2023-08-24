@@ -130,7 +130,9 @@ public:
         static BLWiFiDriver instance;
         return instance;
     }
-
+#ifdef BOUFFALOLAB_BLE_PRO_ENABLE
+    CHIP_ERROR Custom_CommitConfiguration(ByteSpan ssid, ByteSpan credentials);
+#endif
 private:
     bool NetworkMatch(const WiFiNetwork & network, ByteSpan networkId);
 
