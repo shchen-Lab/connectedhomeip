@@ -29,6 +29,8 @@ extern "C" {
 void hal_reboot (void);
 }
 
+static constexpr const uint8_t kOtaImageType[] = {0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00};
+
 using namespace chip::System;
 
 namespace chip {
@@ -215,7 +217,6 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
     ByteSpan block = imageProcessor->mBlock;
     if (imageProcessor->mHeaderParser.IsInitialized())
     {
-
         error = imageProcessor->mHeaderParser.AccumulateAndDecode(block, header);
         if (CHIP_ERROR_BUFFER_TOO_SMALL == error)
         {
@@ -247,6 +248,20 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
 
     if (imageProcessor->mParams.totalFileBytes)
     {
+        constexpr uint32_t lOtaImageTypeSize = sizeof(kOtaImageType) - 1;
+
+        if (imageProcessor->mParams.downloadedBytes < lOtaImageTypeSize) {
+
+            if (memcmp(kOtaImageType + imageProcessor->mParams.downloadedBytes, block.data(), lOtaImageTypeSize - imageProcessor->mParams.downloadedBytes)) {
+
+#if CHIP_DEVICE_LAYER_TARGET_BL616
+                bflb_ota_abort();
+#else
+                hosal_ota_abort();
+#endif
+            }
+        }
+
 #if CHIP_DEVICE_LAYER_TARGET_BL616
         if (bflb_ota_update(imageProcessor->mParams.totalFileBytes, imageProcessor->mParams.downloadedBytes,
                             (uint8_t *) block.data(), block.size()) < 0)
@@ -255,6 +270,12 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
                             (uint8_t *) block.data(), block.size()) < 0)
 #endif
         {
+
+#if CHIP_DEVICE_LAYER_TARGET_BL616
+            bflb_ota_abort();
+#else
+            hosal_ota_abort();
+#endif
             imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
             return;
         }

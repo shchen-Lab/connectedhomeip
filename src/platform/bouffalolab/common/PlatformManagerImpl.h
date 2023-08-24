@@ -93,7 +93,7 @@ inline PlatformManager & PlatformMgr(void)
  * Returns the platform-specific implementation of the PlatformManager singleton object.
  *
  * Chip applications can use this to gain access to features of the PlatformManager
- * that are specific to the ESP32 platform.
+ * that are specific to the Bouffalo Lab platform.
  */
 inline PlatformManagerImpl & PlatformMgrImpl(void)
 {

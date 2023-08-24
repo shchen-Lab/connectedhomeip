@@ -21,6 +21,7 @@
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 
 #include <platform/PlatformManager.h>
+#include <platform/FreeRTOS/SystemTimeSupport.h>
 #include <platform/bouffalolab/BL616/NetworkCommissioningDriver.h>
 #include <platform/bouffalolab/common/DiagnosticDataProviderImpl.h>
 #include <platform/internal/GenericPlatformManagerImpl_FreeRTOS.ipp>

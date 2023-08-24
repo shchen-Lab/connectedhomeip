@@ -109,6 +109,14 @@ bouffalolab_executable("lighting_app") {
     defines += [ "BOOT_PIN_RESET=2" ]
   }
 
+  if (chip_enable_factory_data) {
+    defines += [ "CONFIG_BOUFFALOLAB_FACTORY_DATA_ENABLE" ]
+  }
+
+  if (chip_enable_factory_data_test) {
+    defines += [ "CONFIG_BOUFFALOLAB_FACTORY_DATA_TEST" ]
+  }
+
   bl_plat_name = "bl616"
   sources = [
     "${examples_plat_dir}/common/route_hook/bl_route_hook.c",

@@ -636,6 +636,7 @@ template("bouffalo_sdk") {
       "${bouffalo_sdk_root}/components/utils/partition",
       "${bouffalo_sdk_root}/components/utils/getopt",
       "${bouffalo_sdk_root}/components/utils/ring_buffer",
+      "${bouffalo_sdk_root}/components/utils/matter_factory_data/include",
     ]
 
     defines = [
@@ -672,6 +673,8 @@ template("bouffalo_sdk") {
       "${bouffalo_sdk_root}/components/utils/getopt/utils_getopt.c",
       "${bouffalo_sdk_root}/components/utils/partition/partition.c",
       "${bouffalo_sdk_root}/components/utils/ring_buffer/ring_buffer.c",
+      "${bouffalo_sdk_root}/components/utils/matter_factory_data/efuse_slot.c",
+      "${bouffalo_sdk_root}/components/utils/matter_factory_data/matter_factory_data.c",
     ]
 
     cflags_c = [
