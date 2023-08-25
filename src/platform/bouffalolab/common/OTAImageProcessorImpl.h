@@ -59,6 +59,9 @@ private:
     MutableByteSpan mBlock;
     OTADownloader * mDownloader;
     OTAImageHeaderParser mHeaderParser;
+
+    bool mOtaHdrChecked;
+    uint8_t *mImageOtaHeader;
 };
 
 } // namespace chip

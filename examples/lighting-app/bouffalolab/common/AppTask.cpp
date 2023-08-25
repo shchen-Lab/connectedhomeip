@@ -161,7 +161,7 @@ void AppTask::AppTaskMain(void * pvParameter)
 #endif
 
 #ifdef BOOT_PIN_RESET
-    // ButtonInit();
+    ButtonInit();
 #else
     /** Without RESET PIN defined, factory reset will be executed if power cycle count(resetCnt) >= APP_REBOOT_RESET_COUNT */
     uint32_t resetCnt      = 0;

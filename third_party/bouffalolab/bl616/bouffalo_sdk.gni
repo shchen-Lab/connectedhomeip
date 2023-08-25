@@ -74,7 +74,7 @@ template("bouffalo_sdk") {
     ]
     cflags = [ "-Wno-unused-but-set-variable", "-Wno-conversion", "-fstack-usage" ]
 
-    if (defined(invoker.enable_frame_ptr) && invoker.enable_frame_ptr) {
+    if (defined(invoker.enable_debug_frame_ptr) && invoker.enable_debug_frame_ptr) {
       cflags += [ "-fno-omit-frame-pointer" ]
     }
 
@@ -110,7 +110,7 @@ template("bouffalo_sdk") {
       "${bouffalo_sdk_root}/drivers/soc/bl616/std/startup/system_bl616.c",
     ]
 
-    if (defined(invoker.enable_frame_ptr) && invoker.enable_frame_ptr) {
+    if (defined(invoker.enable_debug_frame_ptr) && invoker.enable_debug_frame_ptr) {
       defines += [ "CONF_ENABLE_FRAME_PTR" ]
     }
 
@@ -522,7 +522,7 @@ template("bouffalo_sdk") {
       "-Wno-builtin-declaration-mismatch",
     ]
 
-    if (defined(invoker.enable_frame_ptr) && invoker.enable_frame_ptr) {
+    if (defined(invoker.enable_debug_frame_ptr) && invoker.enable_debug_frame_ptr) {
       defines += [ "CONF_ENABLE_FRAME_PTR" ]
       include_dirs += [
         "${bouffalo_sdk_root}/components/os/freertos/panic",
