@@ -62,7 +62,7 @@ static_library("BL702") {
 
   if (chip_enable_factory_data || chip_enable_factory_data_test) {
     if (chip_enable_factory_data) {
-      defines = [ "CONFIG_BOUFFALOLAB_FACTORY_DATA_ENABLE" ]
+      defines = [ "CONFIG_BOUFFALOLAB_FACTORY_DATA_ENABLE=1" ]
     }
     common_sources += [
       "${chip_root}/src/credentials/CHIPCert.h",
