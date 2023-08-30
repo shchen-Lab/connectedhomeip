@@ -99,6 +99,9 @@ private:
     bool mSubscribedConns[CONFIG_BT_MAX_CONN];
     bt_gatt_indicate_params mIndicateParams[CONFIG_BT_MAX_CONN];
     bt_conn_cb mConnCallbacks;
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    int ble_instant[2];
+#endif
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     PacketBufferHandle c3CharDataBufferHandle;
 #endif

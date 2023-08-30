@@ -25,15 +25,6 @@
 #include <FreeRTOS.h>
 #if CHIP_DEVICE_LAYER_TARGET_BL616
 #include <mem.h>
-extern "C" size_t xPortGetFreeHeapSize(void)
-{
-    return kfree_size();
-}
-
-extern "C" size_t xPortGetMinimumEverFreeHeapSize( void )
-{
-    return kfree_size();
-}
 #endif
 namespace chip {
 namespace DeviceLayer {

@@ -59,6 +59,7 @@ static_library("BL616") {
     ]
     defines = [ "BOUFFALOLAB_BLE_DATA_ENABLE" ]
     defines +=["BOUFFALOLAB_BLE_PRO_ENABLE"]
+    defines +=["BOUFFALOLAB_BLE_MULTI_ADV"]
   }
 
   if (chip_enable_factory_data || chip_enable_factory_data_test) {

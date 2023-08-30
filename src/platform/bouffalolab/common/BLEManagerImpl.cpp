@@ -34,6 +34,9 @@ extern "C" {
 #else
 #include <ble_lib_api.h>
 #endif
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+#include <multi_adv.h>
+#endif
 }
 
 #include <bluetooth/addr.h>
@@ -268,7 +271,23 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
     const bt_data scanResponseData[]    = { BT_DATA(BT_DATA_NAME_COMPLETE, deviceName, deviceNameSize) };
     const bt_data * scanResponseDataPtr = deviceNameSize > 0 ? scanResponseData : nullptr;
     const size_t scanResponseDataLen    = deviceNameSize > 0 ? sizeof(scanResponseData) / sizeof(scanResponseData[0]) : 0u;
-
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    bt_le_adv_param advParams1;
+    ble_instant[0]=0;
+    ble_instant[1]=0;
+    advParams1.id           = BT_ID_DEFAULT;
+    advParams1.options      = BT_LE_ADV_OPT_CONNECTABLE | BT_LE_ADV_OPT_ONE_TIME;
+    advParams1.interval_min = intervalMin;
+    advParams1.interval_max = intervalMax;
+    const char * device1Name             = "shchen-dev";
+    const uint8_t device1NameSize        = static_cast<uint8_t>(strlen(device1Name));
+    const uint8_t advFlags1          = BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR;
+    const bt_data advertisingData1[] = { BT_DATA(BT_DATA_FLAGS, &advFlags1, sizeof(advFlags1)),
+                                        BT_DATA(BT_DATA_NAME_COMPLETE, &device1Name, device1NameSize) };
+    const bt_data scanResponseData1[]    = { BT_DATA(BT_DATA_NAME_COMPLETE, device1Name, device1NameSize) };
+    const bt_data * scanResponseDataPtr1 = device1NameSize > 0 ? scanResponseData1 : nullptr;
+    const size_t scanResponseDataLen1    = device1NameSize > 0 ? sizeof(scanResponseData1) / sizeof(scanResponseData1[0]) : 0u;
+ #endif
     // Register dynamically CHIPoBLE GATT service
     if (!mFlags.Has(Flags::kChipoBleGattServiceRegister))
     {
@@ -304,11 +323,28 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
     }
 
     // Restart advertising
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    if(true==bt_le_multi_adv_id_is_vaild(ble_instant[0]))
+    {
+        err = bt_le_multi_adv_stop(ble_instant[0]);
+    }
+    if(true==bt_le_multi_adv_id_is_vaild(ble_instant[1]))
+    {
+        err = bt_le_multi_adv_stop(ble_instant[1]);
+    }
+#else
     err = bt_le_adv_stop();
+#endif
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
-
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    err = bt_le_multi_adv_start(&advParams, advertisingData, sizeof(advertisingData) / sizeof(advertisingData[0]), scanResponseDataPtr,
+                          scanResponseDataLen,&ble_instant[0]);
+    err = bt_le_multi_adv_start(&advParams1, advertisingData1, sizeof(advertisingData1) / sizeof(advertisingData1[0]), scanResponseDataPtr1,
+                          scanResponseDataLen1,&ble_instant[1]);
+#else
     err = bt_le_adv_start(&advParams, advertisingData, sizeof(advertisingData) / sizeof(advertisingData[0]), scanResponseDataPtr,
                           scanResponseDataLen);
+#endif
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
 
     // Transition to the Advertising state...
@@ -340,7 +376,19 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
 
 CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
 {
-    int err = bt_le_adv_stop();
+    int err=0;
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    if(true==bt_le_multi_adv_id_is_vaild(ble_instant[0]))
+    {
+        err = bt_le_multi_adv_stop(ble_instant[0]);
+    }
+    if(true==bt_le_multi_adv_id_is_vaild(ble_instant[1]))
+    {
+        err = bt_le_multi_adv_stop(ble_instant[1]);
+    }
+#else
+    err= bt_le_adv_stop();
+#endif
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
 
     // Transition to the not Advertising state...

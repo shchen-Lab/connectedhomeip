@@ -985,6 +985,7 @@ template("bouffalo_sdk") {
       "CONFIG_BT_BONDABLE",
       "CONFIG_BT_ASSERT",
       "CFG_BLE_STACK_DBG_PRINT",
+      "CONFIG_BLE_MULTI_ADV=1",
     ]
 
     include_dirs = [
@@ -1014,6 +1015,7 @@ template("bouffalo_sdk") {
       "CONFIG_BT_KEYS_SAVE_AGING_COUNTER_ON_PAIRING",
       "CONFIG_BT_HCI_VS_EVT_USER",
       "CONFIG_BT_SETTINGS_USE_PRINTK",
+      "CONFIG_BLE_MULTI_ADV=1",
     ]
 
     libs = [ "${bouffalo_sdk_root}/components/wireless/bluetooth/btblecontroller/lib/libbtblecontroller_bl616_ble1m0s1bredr0.a" ]
@@ -1045,6 +1047,7 @@ template("bouffalo_sdk") {
       "${bouffalo_sdk_root}/components/wireless/bluetooth/blestack/src/host/settings.c",
       "${bouffalo_sdk_root}/components/wireless/bluetooth/blestack/src/host/uuid.c",
       "${bouffalo_sdk_root}/components/wireless/bluetooth/blestack/src/port/bl_port.c",
+      "${bouffalo_sdk_root}/components/wireless/bluetooth/blestack/src/host/multi_adv.c"
     ]
 
     cflags_c = [
