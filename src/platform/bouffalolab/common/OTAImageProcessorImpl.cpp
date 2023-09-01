@@ -134,6 +134,29 @@ CHIP_ERROR OTAImageProcessorImpl::ProcessBlock(ByteSpan & block)
     return CHIP_NO_ERROR;
 }
 
+void OTAImageProcessorImpl::OtaAbort(OTAImageProcessorImpl * aImageProcessor, bool isWriteFailure) 
+{
+    if (isWriteFailure) {
+#if CHIP_DEVICE_LAYER_TARGET_BL616
+        bflb_ota_abort();
+#else
+        hosal_ota_abort();
+#endif
+    }
+
+    if (aImageProcessor->mImageOtaHeader) {
+        chip::Platform::MemoryFree(aImageProcessor->mImageOtaHeader);
+    }
+    aImageProcessor->mImageOtaHeader = nullptr;
+
+    if (isWriteFailure) {
+        aImageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
+    }
+    else {
+        aImageProcessor->mDownloader->EndDownload(CHIP_ERROR_OPEN_FAILED);
+    }
+}
+
 void OTAImageProcessorImpl::HandlePrepareDownload(intptr_t context)
 {
     auto * imageProcessor = reinterpret_cast<OTAImageProcessorImpl *>(context);
@@ -240,6 +263,8 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
     CHIP_ERROR error;
     uint64_t totalSize = 0, offset = 0;
     int writeSize = 0;
+    static const uint32_t public_key_hash_empty_efuse [8] = {0,0,0,0,0,0,0,0};
+    static const uint32_t public_key_hash_empty_ota_header [8] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
 
     auto * imageProcessor = reinterpret_cast<OTAImageProcessorImpl *>(context);
 
@@ -288,12 +313,7 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
         if (hosal_ota_start(header.mPayloadSize - sizeof(ota_header_t) + OTA_HEADER_HASH_SIZE) < 0)
 #endif
         {
-            if (imageProcessor->mImageOtaHeader) {
-                chip::Platform::MemoryFree(imageProcessor->mImageOtaHeader);
-            }
-            imageProcessor->mImageOtaHeader = nullptr;
-
-            imageProcessor->mDownloader->EndDownload(CHIP_ERROR_OPEN_FAILED);
+            imageProcessor->OtaAbort(imageProcessor, false);
             return;
         }
     }
@@ -327,23 +347,24 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
 #define EFUSE_PUBLIC_KEY_HASH_OFFSET 0x1C
                 hosal_efuse_read(EFUSE_PUBLIC_KEY_HASH_OFFSET, (uint32_t *)publicKeyHash, (OTA_HEADER_HASH_SIZE + 3) / 4);
 #endif
+
                 if (memcmp(kOtaImage_otaHdr, imageProcessor->mImageOtaHeader, sizeof(kOtaImage_otaHdr)) || 
                     (memcmp(lOtaHeader->u.s.type, kOtaImage_typeXz, sizeof(kOtaImage_typeXz)) &&
-                        memcmp(lOtaHeader->u.s.type, kOtaImage_typeRaw, sizeof(kOtaImage_typeRaw))) ||
-                    memcmp(lOtaHeader->u.s.pk_hash, publicKeyHash, OTA_HEADER_HASH_SIZE)) {
+                        memcmp(lOtaHeader->u.s.type, kOtaImage_typeRaw, sizeof(kOtaImage_typeRaw)))) {
 
-                    if (imageProcessor->mImageOtaHeader) {
-                        chip::Platform::MemoryFree(imageProcessor->mImageOtaHeader);
-                    }
-                    imageProcessor->mImageOtaHeader = nullptr;
-
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-                    bflb_ota_abort();
-#else
-                    hosal_ota_abort();
-#endif
-                    imageProcessor->mDownloader->EndDownload(CHIP_ERROR_DECODE_FAILED);
+                    imageProcessor->OtaAbort(imageProcessor, true);
                     return;
+                }
+
+                if (memcmp(public_key_hash_empty_efuse, publicKeyHash, sizeof(publicKeyHash)) || 
+                    memcmp(public_key_hash_empty_ota_header, lOtaHeader->u.s.pk_hash, sizeof(lOtaHeader->u.s.pk_hash))) {
+                    /** device signed or ota firmware signed or both */
+
+                    if (memcmp(lOtaHeader->u.s.pk_hash, publicKeyHash, sizeof(publicKeyHash))) {
+                        /** device signature is not same as ota header */
+                        imageProcessor->OtaAbort(imageProcessor, true);
+                        return;
+                    }
                 }
 
                 imageProcessor->mOtaHdrChecked = true;
@@ -361,17 +382,8 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
                 if (hosal_ota_update(totalSize, offset, (uint8_t *) block.data() + block.size() - writeSize, writeSize) < 0)
 #endif
                 {
-                    if (imageProcessor->mImageOtaHeader) {
-                        chip::Platform::MemoryFree(imageProcessor->mImageOtaHeader);
-                    }
-                    imageProcessor->mImageOtaHeader = nullptr;
 
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-                    bflb_ota_abort();
-#else
-                    hosal_ota_abort();
-#endif
-                    imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
+                    imageProcessor->OtaAbort(imageProcessor, true);
                     return;
                 }
 
@@ -385,17 +397,7 @@ void OTAImageProcessorImpl::HandleProcessBlock(intptr_t context)
                     if (hosal_ota_update(totalSize, offset, lOtaHeader->u.s.sha256, sizeof(lOtaHeader->u.s.sha256)) < 0)
 #endif
                     {
-                        if (imageProcessor->mImageOtaHeader) {
-                            chip::Platform::MemoryFree(imageProcessor->mImageOtaHeader);
-                        }
-                        imageProcessor->mImageOtaHeader = nullptr;
-
-#if CHIP_DEVICE_LAYER_TARGET_BL616
-                        bflb_ota_abort();
-#else
-                        hosal_ota_abort();
-#endif
-                        imageProcessor->mDownloader->EndDownload(CHIP_ERROR_WRITE_FAILED);
+                        imageProcessor->OtaAbort(imageProcessor, true);
                         return;
                     }
                 }
