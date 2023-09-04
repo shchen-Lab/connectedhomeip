@@ -50,7 +50,10 @@ CHIP_ERROR BLWiFiDriver::Init(NetworkStatusChangeCallback * networkStatusChangeC
     err = PersistedStorage::KeyValueStoreMgr().Get(BLConfig::kConfigKey_WiFiPassword, mSavedNetwork.ssid,
                                                    sizeof(mSavedNetwork.ssid), &ssidLen);
     SuccessOrExit(err);
-
+    if(credentialsLen==1)
+    {
+        credentialsLen=0;
+    }
     mSavedNetwork.credentialsLen = credentialsLen;
     mSavedNetwork.ssidLen        = ssidLen;
 
@@ -79,8 +82,17 @@ CHIP_ERROR BLWiFiDriver::CommitConfiguration()
     ChipLogProgress(NetworkProvisioning, "BLWiFiDriver::CommitConfiguration");
     ReturnErrorOnFailure(
         PersistedStorage::KeyValueStoreMgr().Put(BLConfig::kConfigKey_WiFiSSID, mStagingNetwork.ssid, mStagingNetwork.ssidLen));
-    ReturnErrorOnFailure(PersistedStorage::KeyValueStoreMgr().Put(BLConfig::kConfigKey_WiFiPassword, mStagingNetwork.credentials,
+    if(mStagingNetwork.credentialsLen==0)
+    {
+        mStagingNetwork.credentialsLen=1;
+        ReturnErrorOnFailure(PersistedStorage::KeyValueStoreMgr().Put(BLConfig::kConfigKey_WiFiPassword, mStagingNetwork.credentials,
+                                                                    mStagingNetwork.credentialsLen));
+    }
+    else
+    {
+        ReturnErrorOnFailure(PersistedStorage::KeyValueStoreMgr().Put(BLConfig::kConfigKey_WiFiPassword, mStagingNetwork.credentials,
                                                                   mStagingNetwork.credentialsLen));
+    }
     mSavedNetwork = mStagingNetwork;
     return CHIP_NO_ERROR;
 }
@@ -106,9 +118,11 @@ Status BLWiFiDriver::AddOrUpdateNetwork(ByteSpan ssid, ByteSpan credentials, Mut
     VerifyOrReturnError(credentials.size() <= sizeof(mStagingNetwork.credentials), Status::kOutOfRange);
     VerifyOrReturnError(ssid.size() <= sizeof(mStagingNetwork.ssid), Status::kOutOfRange);
 
+    memset(mStagingNetwork.credentials, 0, sizeof(mStagingNetwork.credentials));
     memcpy(mStagingNetwork.credentials, credentials.data(), credentials.size());
     mStagingNetwork.credentialsLen = static_cast<decltype(mStagingNetwork.credentialsLen)>(credentials.size());
 
+    memset(mStagingNetwork.ssid, 0, sizeof(mStagingNetwork.ssid));
     memcpy(mStagingNetwork.ssid, ssid.data(), ssid.size());
     mStagingNetwork.ssidLen = static_cast<decltype(mStagingNetwork.ssidLen)>(ssid.size());
 
@@ -157,10 +171,20 @@ CHIP_ERROR BLWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
     }
 
     memcpy(wifi_ssid, ssid, ssidLen);
-    memcpy(passwd, key, keyLen);
+    if(keyLen!=0)
+    {
+        memcpy(passwd, key, keyLen);
+    }
     wifi_interface_t wifi_interface;
     wifi_interface = wifi_mgmr_sta_enable();
-    wifi_mgmr_sta_connect(&wifi_interface, wifi_ssid, passwd, NULL, NULL, 0, 0);
+    if(keyLen!=0)
+    {
+        wifi_mgmr_sta_connect(&wifi_interface, wifi_ssid, passwd, NULL, NULL, 0, 0);
+    }
+    else
+    {
+        wifi_mgmr_sta_connect(&wifi_interface, wifi_ssid, NULL, NULL, NULL, 0, 0);
+    }
 
     return CHIP_NO_ERROR;
 }
