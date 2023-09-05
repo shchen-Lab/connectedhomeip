@@ -56,14 +56,9 @@ private:
      */
     CHIP_ERROR ReleaseBlock();
 
-    void OtaAbort(OTAImageProcessorImpl * aImageProcessor, bool isWriteFailure);
-
     MutableByteSpan mBlock;
     OTADownloader * mDownloader;
     OTAImageHeaderParser mHeaderParser;
-
-    bool mOtaHdrChecked;
-    uint8_t *mImageOtaHeader;
 };
 
 } // namespace chip

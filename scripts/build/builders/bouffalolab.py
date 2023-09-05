@@ -229,8 +229,8 @@ class BouffalolabBuilder(GnBuilder):
         # Generate Bouffalo Lab format OTA image for development purpose.
 
         ota_images_folder_path = self.output_dir + "/ota_images"
-        ota_images_dev_image = self.output_dir + "/" + self.app.AppNamePrefix(self.chip_name) + ".bin.xz.ota"
-        ota_images_image = self.output_dir + "/ota_images/FW_OTA.bin.xz.ota"
+        ota_images_dev_image = self.output_dir + "/" + self.app.AppNamePrefix(self.chip_name) + ".bin.xz.hash"
+        ota_images_image = self.output_dir + "/ota_images/FW_OTA.bin.xz.hash"
         ota_images_firmware = self.output_dir + "/" + self.app.AppNamePrefix(self.chip_name) + ".bin"
 
         ota_images_flash_tool = self.output_dir + "/" + self.app.AppNamePrefix(self.chip_name) + ".flash.py"
@@ -241,7 +241,7 @@ class BouffalolabBuilder(GnBuilder):
         if not os.path.isfile(ota_images_firmware):
             return
 
-        os.system("python " + ota_images_flash_tool + " --build_ota > /dev/null")
+        os.system("python " + ota_images_flash_tool + " --build > /dev/null")
 
         if not os.path.isfile(ota_images_image):
             return
@@ -249,6 +249,4 @@ class BouffalolabBuilder(GnBuilder):
         os.system("cp " + ota_images_image + " " + ota_images_dev_image)
 
         logging.info("PostBuild:")
-        logging.info("Bouffalo Lab OTA format image without signature: " + self.app.AppNamePrefix(self.chip_name) + ".bin.xz.ota is generated.")
-        logging.warning("Now, Bouffalo Lab changes to use OTA image type .bin.xz.ota for Matter OTA image build.")
-        logging.warning("OTA image type .bin.xz.hash is still available in ota_images folder and using to upgrade which is running old firmware.")
+        logging.info("Bouffalo Lab OTA format image without signature: " + self.app.AppNamePrefix(self.chip_name) + ".bin.xz.hash is generated.")

@@ -77,21 +77,7 @@ BOUFFALO_OPTIONS = {
             },
         },
         'build': {
-            'help': 'Deprecated, please use --build_ota or --build_ota_sign',
-            'default': None,
-            'argparse': {
-                'action': 'store_true'
-            }
-        },
-        'build_ota': {
-            'help': 'Build ota image without singture hash included',
-            'default': None,
-            'argparse': {
-                'action': 'store_true'
-            }
-        },
-        'build_ota_sign': {
-            'help': 'Build ota image with singture hash included. Must work with --pk and --sk',
+            'help': 'Build image',
             'default': None,
             'argparse': {
                 'action': 'store_true'
@@ -198,7 +184,7 @@ class Flasher(firmware_utils.Flasher):
         dts_path = None
         xtal_value = None
 
-        is_for_ota_image_building = None
+        is_for_ota_image_building = False
         is_for_programming = False
         has_private_key = False
         has_public_key = False
@@ -229,14 +215,7 @@ class Flasher(firmware_utils.Flasher):
 
             if value:
                 if value is True:
-                    if "build_ota" == key:
-                        is_for_ota_image_building = "ota"
-                        arg = ("--{}".format("build")).strip()
-                    elif "build_ota_sign" == key:
-                        is_for_ota_image_building = "ota_sign"
-                        arg = ("--{}".format("build")).strip()
-                    else:
-                        arg = ("--{}".format(key)).strip()
+                    arg = ("--{}".format(key)).strip()
                 elif isinstance(value, pathlib.Path):
                     arg = ("--{}={}".format(key, os.path.join(os.getcwd(), str(value)))).strip()
                 else:
@@ -252,23 +231,8 @@ class Flasher(firmware_utils.Flasher):
                 if value:
                     is_for_programming = True
             elif "build" == key:
-
                 if value:
-                    logging.error("*" * 80)
-                    logging.error("\t\t--build is deprecated.")
-                    logging.error("")
-
-                    logging.error("Real product should has hardware signture enabled to protect firmware to be hacked.")
-                    logging.error("To be avoid: An ota image with invalid signture is upgraded to device in real product.")
-                    logging.error("             Public key hash should be verified during ota upgrade process.")
-                    logging.error("             Use --build_ota_sign to build ota image with public key added.")
-
-                    logging.error("Development is not necessary to have hardware signture enabled. ")
-                    logging.error("             Use --build_ota to build ota image without public key added.")
-
-                    logging.error("*" * 80)
-
-                    raise Exception("Wrong options.")
+                    is_for_ota_image_building = True
             elif "pk" == key:
                 if value:
                     has_public_key = True
@@ -286,10 +250,6 @@ class Flasher(firmware_utils.Flasher):
 
         if not ((has_private_key and has_public_key) or (not has_public_key and not has_private_key)):
             logging.error("Key pair expects a pair of public key and private.")
-            raise Exception("Wrong key pair.")
-
-        if is_for_ota_image_building == "ota_sign" and (not has_private_key or not has_public_key):
-            logging.error("Expecting key pair to sign OTA image.")
             raise Exception("Wrong key pair.")
 
         if not dts_path and xtal_value:
@@ -328,7 +288,7 @@ class Flasher(firmware_utils.Flasher):
         if ota_output_folder:
             ota_images = os.listdir(ota_output_folder)
             for img in ota_images:
-                if img not in ['FW_OTA.bin.xz.ota', 'FW_OTA.bin.xz.hash']:
+                if img not in ['FW_OTA.bin.xz.hash']:
                     os.remove(os.path.join(ota_output_folder, img))
 
         return self
