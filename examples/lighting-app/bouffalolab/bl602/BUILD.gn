@@ -45,7 +45,7 @@ declare_args() {
   # reboot delay in seconds to apply new OTA image
   ota_auto_reboot_delay_seconds = 5
 
-  enable_heap_monitoring = true
+  enable_heap_monitoring = false
   enable_reset_counter = false
 
   setupPinCode = 20202021
