@@ -87,7 +87,8 @@
 #define TCP_QUEUE_OOSEQ               1
 #define MEMP_NUM_TCP_SEG              ((4 * TCP_SND_BUF) / TCP_MSS)
 #define MEMP_NUM_PBUF                 (TCP_SND_BUF / TCP_MSS)
-#define PBUF_POOL_SIZE                0
+#define PBUF_POOL_SIZE			 	  16
+#define PBUF_POOL_BUFSIZE 		 	  1600
 #define LWIP_WND_SCALE                1
 #define TCP_RCV_SCALE                 2
 #define TCP_SNDLOWAT                  LWIP_MIN(LWIP_MAX(((TCP_SND_BUF) / 4), (2 * TCP_MSS) + 1), (TCP_SND_BUF)-1)
@@ -105,6 +106,8 @@
 #define MEM_SIZE 8192
 #endif
 #endif
+
+
 #define LWIP_HOOK_FILENAME        "lwiphooks.h"
 //#define LWIP_HOOK_FILENAME        "bl_lwip_hooks.h"
 

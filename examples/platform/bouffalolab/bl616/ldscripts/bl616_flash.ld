@@ -20,7 +20,7 @@ psram_min_size = 0x1000;
 nocache_min_size = 20K;
 
 __EM_SIZE = DEFINED(btble_controller_init) ? 32K : 0K;
-__REMAIN_WRAM_SIZE = 60K;
+__REMAIN_WRAM_SIZE = 30K;
 __RFTLV_SIZE_OFFSET = 1K;
 __RFTLV_SIZE_HOLE = 2K;
 __RFTLV_HEAD1_H = (0x46524C42); /* BLRF */
