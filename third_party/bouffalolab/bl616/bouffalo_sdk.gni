@@ -895,7 +895,7 @@ template("bouffalo_sdk") {
       "${bouffalo_sdk_root}/components/net/lwip/lwip/src/core/inet_chksum.c",
       "${bouffalo_sdk_root}/components/net/lwip/lwip/src/core/init.c",
       "${bouffalo_sdk_root}/components/net/lwip/lwip/src/core/ip.c",
-      "${bouffalo_sdk_root}/components/net/lwip/lwip/src/core/mem.c",
+      # "${bouffalo_sdk_root}/components/net/lwip/lwip/src/core/mem.c",
       "${bouffalo_sdk_root}/components/net/lwip/lwip/src/core/memp.c",
       "${bouffalo_sdk_root}/components/net/lwip/lwip/src/core/netif.c",
       "${bouffalo_sdk_root}/components/net/lwip/lwip/src/core/pbuf.c",

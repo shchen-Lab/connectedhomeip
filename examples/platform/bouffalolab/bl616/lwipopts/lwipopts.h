@@ -34,9 +34,9 @@
 
 #include <stdbool.h>
 
-#define LWIP_NETIF_API     1
-#define LWIP_DEBUG         1
-#define LWIP_STATS_DISPLAY 1
+#define LWIP_NETIF_API     			  1
+#define LWIP_DEBUG         			  1
+#define LWIP_STATS 					  0
 #define SOCKETS_DEBUG      LWIP_DBG_OFF
 #ifdef BL616_DHCP_DEBUG
 #define DHCP_DEBUG LWIP_DBG_ON
@@ -140,18 +140,28 @@
 #define LWIP_ERRNO_STDINCLUDE 1
 
 #define PBUF_POOL_SIZE			 	  	0
-#define PBUF_POOL_BUFSIZE 		 	    0
-#define MEM_USE_POOLS                   1
-#define MEMP_USE_CUSTOM_POOLS 	  		1
+#define PBUF_POOL_BUFSIZE 		 	    1600
+#define MEM_LIBC_MALLOC					0
+#define MEM_USE_POOLS                   0
+#define MEMP_USE_CUSTOM_POOLS 	  		0
 #define LWIP_PBUF_FROM_CUSTOM_POOLS   	1
+#define PBUF_CUSTOM_POOL_IDX_START (MEMP_PBUF_POOL_SMALL)
+#define PBUF_CUSTOM_POOL_IDX_END (MEMP_PBUF_POOL_LARGE)
 
+#include "lwip/arch.h"
+#include <lwip/mem.h>
+#define LWIP_PBUF_CUSTOM_DATA           mem_size_t pool;
 
 #if defined(__cplusplus)
 extern "C" long random(void);
 extern "C" int * __errno(void);
+extern "C" const mem_size_t * memp_sizes;
+extern "C" struct pbuf *pbuf_rightsize(struct pbuf *p, s16_t offset);
 #else
 extern long random(void);
 extern int * __errno(void);
+extern const mem_size_t * memp_sizes;
+extern struct pbuf *pbuf_rightsize(struct pbuf *p, s16_t offset);
 #endif
 
 #define errno                         (*__errno())
