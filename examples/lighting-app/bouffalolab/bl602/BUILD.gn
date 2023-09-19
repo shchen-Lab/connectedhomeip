@@ -125,6 +125,7 @@ bouffalolab_executable("lighting_app") {
 
   bl_plat_name = "bl602"
   sources = [
+    "${examples_plat_dir}/common/route_hook/bl_lwip_mem.c",
     "${examples_plat_dir}/common/route_hook/bl_route_hook.c",
     "${examples_plat_dir}/common/route_hook/bl_route_table.c",
   ]

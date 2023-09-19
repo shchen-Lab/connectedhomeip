@@ -139,7 +139,7 @@
 
 #define LWIP_ERRNO_STDINCLUDE 1
 
-#define PBUF_POOL_SIZE			 	  	0
+#define PBUF_POOL_SIZE                   0
 #define PBUF_POOL_BUFSIZE 		 	    1600
 #define MEM_LIBC_MALLOC					0
 #define MEM_USE_POOLS                   0

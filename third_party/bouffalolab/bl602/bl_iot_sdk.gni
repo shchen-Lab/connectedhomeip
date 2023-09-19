@@ -874,7 +874,7 @@ template("bl_iot_sdk") {
       "${bl_iot_sdk_root}/components/network/lwip/src/core/inet_chksum.c",
       "${bl_iot_sdk_root}/components/network/lwip/src/core/init.c",
       "${bl_iot_sdk_root}/components/network/lwip/src/core/ip.c",
-      "${bl_iot_sdk_root}/components/network/lwip/src/core/mem.c",
+#      "${bl_iot_sdk_root}/components/network/lwip/src/core/mem.c",
       "${bl_iot_sdk_root}/components/network/lwip/src/core/memp.c",
       "${bl_iot_sdk_root}/components/network/lwip/src/core/netif.c",
       "${bl_iot_sdk_root}/components/network/lwip/src/core/pbuf.c",

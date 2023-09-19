@@ -78,10 +78,6 @@ a lot of data that needs to be copied, this should be set high. */
 
 #define MEMP_NUM_NETCONN    (MEMP_NUM_TCP_PCB + MEMP_NUM_UDP_PCB + MEMP_NUM_TCP_PCB_LISTEN)
 
-/* ---------- Pbuf options ---------- */
-/* PBUF_POOL_SIZE: the number of buffers in the pbuf pool. */
-#define PBUF_POOL_SIZE          0
-
 /* ---------- TCP options ---------- */
 #define LWIP_TCP                1
 #define IP_DEFAULT_TTL          64
@@ -152,7 +148,7 @@ a lot of data that needs to be copied, this should be set high. */
 
 
 /* ---------- Statistics options ---------- */
-#define LWIP_STATS 1
+#define LWIP_STATS 0
 #define LWIP_PROVIDE_ERRNO 1
 
 /* ---------- link callback options ---------- */
@@ -275,14 +271,25 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_AUTOIP                     1
 #define LWIP_IPV6_MLD                   1
 #define LWIP_ND6_RDNSS_MAX_DNS_SERVERS  1
+#define MEMP_NUM_MLD6_GROUP 10
 #define LWIP_HOOK_FILENAME              "bl_lwip_hooks.h"
 
 #define LWIP_NETIF_EXT_STATUS_CALLBACK  1
 
-#define LWIP_PBUF_FROM_CUSTOM_RAM_HEAP  1
 
-/* PBUF_POOL_BUFSIZE: the size of each pbuf in the pbuf pool. */
+#define PBUF_POOL_SIZE              0
 #define PBUF_POOL_BUFSIZE               LWIP_MEM_ALIGN_SIZE(TCP_MSS+40+PBUF_LINK_ENCAPSULATION_HLEN+PBUF_LINK_HLEN)
+#define MEM_LIBC_MALLOC             0
+#define MEM_USE_POOLS                   0
+#define MEMP_USE_CUSTOM_POOLS          0
+#define LWIP_PBUF_FROM_CUSTOM_POOLS    1
+#define PBUF_CUSTOM_POOL_IDX_START (MEMP_PBUF_POOL_SMALL)
+#define PBUF_CUSTOM_POOL_IDX_END (MEMP_PBUF_POOL_LARGE)
+
+#include "lwip/arch.h"
+#include <lwip/mem.h>
+#define LWIP_PBUF_CUSTOM_DATA           mem_size_t pool;
+
 /*
    ---------------------------------
    ---------- MISC. options ----------
@@ -292,9 +299,13 @@ a lot of data that needs to be copied, this should be set high. */
 #if defined(__cplusplus)
 extern "C" int bl_rand(void);
 extern "C" int * __errno(void);
+extern "C" const mem_size_t * memp_sizes;
+extern "C" struct pbuf *pbuf_rightsize(struct pbuf *p, s16_t offset);
 #else
 extern int bl_rand(void);
 extern int * __errno(void);
+extern const mem_size_t * memp_sizes;
+extern struct pbuf *pbuf_rightsize(struct pbuf *p, s16_t offset);
 #endif
 
 #define errno (*__errno())
