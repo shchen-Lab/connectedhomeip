@@ -17,6 +17,8 @@
  */
 
 #include <bl616_glb.h>
+#include <bl616_glb_gpio.h>
+#include <bl616_hbn.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
@@ -51,10 +53,34 @@ static int btblecontroller_em_config(void)
 }
 #endif
 
+void bl_lp_rtc_use_xtal32K()
+{
+    GLB_GPIO_Cfg_Type gpioCfg = {
+        .gpioPin = GLB_GPIO_PIN_0,
+        .gpioFun = GPIO_FUN_ANALOG,
+        .gpioMode = GPIO_MODE_ANALOG,
+        .pullType = GPIO_PULL_NONE,
+        .drive = 1,
+        .smtCtrl = 1
+    };
+
+    gpioCfg.gpioPin = 16;
+    GLB_GPIO_Init(&gpioCfg);
+    gpioCfg.gpioPin = 17;
+    GLB_GPIO_Init(&gpioCfg);
+
+    HBN_Power_On_Xtal_32K();
+    HBN_32K_Sel(1);
+    /* GPIO17 no pull */
+    *((volatile uint32_t *)0x2000F014) &= ~(1 << 16);
+}
+
 void platform_port_init(void)
 {
     board_init();
 
+    /*if need use xtal 32k please enable next API */
+    //bl_lp_rtc_use_xtal32K();
 #if CONFIG_ENABLE_CHIP_SHELL
     struct bflb_device_s *uart0 = bflb_device_get_by_name("uart0");
     shell_init_with_task(uart0);
