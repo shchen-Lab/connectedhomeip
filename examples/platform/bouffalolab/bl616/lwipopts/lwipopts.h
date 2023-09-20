@@ -36,7 +36,8 @@
 
 #define LWIP_NETIF_API     			  1
 #define LWIP_DEBUG         			  1
-#define LWIP_STATS 					  0
+#define LWIP_STATS 					  1
+#define MEMP_STATS 0
 #define SOCKETS_DEBUG      LWIP_DBG_OFF
 #ifdef BL616_DHCP_DEBUG
 #define DHCP_DEBUG LWIP_DBG_ON
@@ -137,14 +138,12 @@
 
 #define LWIP_NETIF_EXT_STATUS_CALLBACK 1
 
-#define LWIP_ERRNO_STDINCLUDE 1
-
-#define PBUF_POOL_SIZE                   0
-#define PBUF_POOL_BUFSIZE 		 	    1600
-#define MEM_LIBC_MALLOC					0
+#define PBUF_POOL_SIZE              0
+#define PBUF_POOL_BUFSIZE               LWIP_MEM_ALIGN_SIZE(TCP_MSS+40+PBUF_LINK_ENCAPSULATION_HLEN+PBUF_LINK_HLEN)
+#define MEM_LIBC_MALLOC             0
 #define MEM_USE_POOLS                   0
-#define MEMP_USE_CUSTOM_POOLS 	  		0
-#define LWIP_PBUF_FROM_CUSTOM_POOLS   	1
+#define MEMP_USE_CUSTOM_POOLS          0
+#define LWIP_PBUF_FROM_CUSTOM_POOLS    1
 #define PBUF_CUSTOM_POOL_IDX_START (MEMP_PBUF_POOL_SMALL)
 #define PBUF_CUSTOM_POOL_IDX_END (MEMP_PBUF_POOL_LARGE)
 
