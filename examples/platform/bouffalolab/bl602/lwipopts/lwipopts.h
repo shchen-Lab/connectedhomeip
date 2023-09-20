@@ -148,7 +148,8 @@ a lot of data that needs to be copied, this should be set high. */
 
 
 /* ---------- Statistics options ---------- */
-#define LWIP_STATS 0
+#define LWIP_STATS 1
+#define MEMP_STATS 0
 #define LWIP_PROVIDE_ERRNO 1
 
 /* ---------- link callback options ---------- */

@@ -719,8 +719,8 @@ mem_malloc_adjust_lfree:
 
         mem->mem_size = size_in;
         struct pbuf *p_mem = (struct pbuf *)((u8_t *)mem + SIZEOF_STRUCT_MEM + MEM_SANITY_OFFSET);
-        p_mem->pool = mem_to_ptr(mem);
-        
+        p_mem->pool = (size_t*)mem - (size_t*)memp_sizes;
+
         return (u8_t *)mem + SIZEOF_STRUCT_MEM + MEM_SANITY_OFFSET;
       }
     }
