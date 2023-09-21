@@ -149,7 +149,6 @@ CHIP_ERROR BLWiFiDriver::ConnectWiFiNetwork(const char * ssid, uint8_t ssidLen, 
     conn_param.use_dhcp = 1;
     conn_param.pmf_cfg = 1;
     conn_param.quick_connect = 1;
-    conn_param.timeout_ms = -1;
 
     wifi_mgmr_sta_connect(&conn_param);
 

@@ -36,7 +36,7 @@
 
 #define LWIP_NETIF_API     			  1
 #define LWIP_DEBUG         			  1
-#define LWIP_STATS 					  1
+#define LWIP_STATS_DISPLAY            1
 #define MEMP_STATS 0
 #define SOCKETS_DEBUG      LWIP_DBG_OFF
 #ifdef BL616_DHCP_DEBUG

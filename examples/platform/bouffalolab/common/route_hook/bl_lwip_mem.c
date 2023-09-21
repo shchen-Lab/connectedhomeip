@@ -719,7 +719,9 @@ mem_malloc_adjust_lfree:
 
         mem->mem_size = size_in;
         struct pbuf *p_mem = (struct pbuf *)((u8_t *)mem + SIZEOF_STRUCT_MEM + MEM_SANITY_OFFSET);
-        p_mem->pool = (size_t*)mem - (size_t*)memp_sizes;
+        p_mem->pool = (mem_size_t*)mem - (mem_size_t*)memp_sizes;
+
+        lfree->used = 0;
 
         return (u8_t *)mem + SIZEOF_STRUCT_MEM + MEM_SANITY_OFFSET;
       }
@@ -766,11 +768,6 @@ mem_calloc(mem_size_t count, mem_size_t size)
 }
 
 const mem_size_t * memp_sizes = (mem_size_t *)LWIP_RAM_HEAP_POINTER;
-#ifdef stats_display
-#undef stats_display
-#endif
-
-void stats_display() {}
 
 struct pbuf *
 pbuf_rightsize(struct pbuf *p, s16_t offset)
