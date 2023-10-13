@@ -60,7 +60,7 @@ private:
     CHIP_ERROR WriteLastMessageLQI(AttributeValueDecoder & aDecoder,chip::EndpointId endpointid);
 };
 
-//ZigbeeDiagnostic gAttrAccess;
+ZigbeeDiagnosticServer gAttrAccess;
 ZigbeeDiagnosticServer ZigbeeDiagnosticServer::instance;
 
 ZigbeeDiagnosticServer & ZigbeeDiagnosticServer::Instance()
@@ -164,14 +164,7 @@ CHIP_ERROR ZigbeeDiagnosticServer::WriteLastMessageLQI(AttributeValueDecoder & a
 }
 bool ZigbeeDiagnosticServer::TestDeviceCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath)
 {
-    int8_t LastRSSI;
-
-    EmberAfStatus status = Attributes::LastMessageRSSI::Get(commandPath.mEndpointId, &LastRSSI);
-    if (status != EMBER_ZCL_STATUS_SUCCESS)
-    {
-        ChipLogProgress(Zcl, "ERR: ReadLastMessageRSSI %x", status);
-    }
-    commandObj->AddStatus(commandPath, app::ToInteractionModelStatus(status));
+    commandObj->AddStatus(commandPath, app::ToInteractionModelStatus(EMBER_ZCL_STATUS_SUCCESS));
     return true;
 }
 
@@ -182,7 +175,7 @@ bool ZigbeeDiagnosticServer::TestDeviceCommand(app::CommandHandler * commandObj,
 
 void MatterZigbeeDiagnosticPluginServerInitCallback()
 {
-    //registerAttributeAccessOverride(&gAttrAccess);
+    registerAttributeAccessOverride(&gAttrAccess);
 }
 bool emberAfZigbeeDiagnosticClusterTestDeviceCallback(
     chip::app::CommandHandler * commandObj, const chip::app::ConcreteCommandPath & commandPath,

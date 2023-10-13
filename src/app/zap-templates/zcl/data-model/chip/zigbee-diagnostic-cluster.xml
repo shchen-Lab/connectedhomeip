@@ -27,8 +27,8 @@ limitations under the License.
         <server tick="false" init="false">true</server>
         <globalAttribute side="either" code="0xFFFD" value="2"/>
 
-        <attribute side="server" code="0x011C" define="LAST_MESSAGE_LQI"     type="int8u"     optional="true">LastMessageLQI</attribute>
-        <attribute side="server" code="0x011D" define="LAST_MESSAGE_RSSI"    type="int8s"     optional="true">LastMessageRSSI</attribute>
+        <attribute side="server" code="0x011C" define="LAST_MESSAGE_LQI"     type="int8u" max="0xFE" writable="true" default="0x01"  optional="true">LastMessageLQI</attribute>
+        <attribute side="server" code="0x011D" define="LAST_MESSAGE_RSSI"    type="int8s" max="0xFE" writable="true" default="0x01"  optional="true">LastMessageRSSI</attribute>
 
         <command source="client" code="0x00" name="TestDevice" optional="true">
           <description>TestDevice</description>

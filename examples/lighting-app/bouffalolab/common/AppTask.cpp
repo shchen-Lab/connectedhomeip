@@ -271,7 +271,6 @@ void AppTask::LightingUpdate(app_event_t status)
                 {
                     break;
                 }
-
                 if (!onoff)
                 {
                     sLightLED.SetLevel(0);

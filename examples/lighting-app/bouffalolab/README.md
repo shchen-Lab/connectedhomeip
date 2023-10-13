@@ -375,8 +375,13 @@ ota-provider-app build and usage.
     `rpcs.chip.rpc.Lighting.Get()`
 
     `rpcs.chip.rpc.Lighting.Set(on=True, level=128)`
+## Custom Cluster
 -  Command
     ```shell
         ./scripts/tools/zap/generate.py -t src/app/common/templates/templates.json  -o zzz_generated/app-common/app-common/zap-generated/  examples/lighting-app/bouffalolab/data_model/lighting-app-wifi.zap
         ./scripts/tools/zap/generate.py  examples/lighting-app/bouffalolab/data_model/lighting-app-wifi.zap
+    ```
+-  TestCommand
+    ```shell
+    ./chip-tool any command-by-id 0x130D0B05 0x0000 '{ "0x0": { "0": null, "1": false }}' 123 1
     ```

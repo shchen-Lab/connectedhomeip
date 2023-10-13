@@ -1716,8 +1716,8 @@ server cluster ColorControl = 768 {
 
 /** Zigbee Diagnostic cluser */
 server cluster ZigbeeDiagnostic = 319621893 {
-  readonly attribute int8u lastMessageLQI = 284;
-  readonly attribute int8s lastMessageRSSI = 285;
+  attribute int8u lastMessageLQI = 284;
+  attribute int8s lastMessageRSSI = 285;
   readonly attribute command_id generatedCommandList[] = 65528;
   readonly attribute command_id acceptedCommandList[] = 65529;
   readonly attribute event_id eventList[] = 65530;
@@ -2024,8 +2024,8 @@ endpoint 1 {
   }
 
   server cluster ZigbeeDiagnostic {
-    ram      attribute lastMessageLQI;
-    ram      attribute lastMessageRSSI;
+    ram      attribute lastMessageLQI default = 0x01;
+    ram      attribute lastMessageRSSI default = 0x01;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute eventList;
