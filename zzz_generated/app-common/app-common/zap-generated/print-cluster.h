@@ -647,6 +647,12 @@
 #define CHIP_PRINTCLUSTER_ELECTRICAL_MEASUREMENT_CLUSTER
 #endif
 
+#if defined(ZCL_USING_ZIGBEE_DIAGNOSTIC_SERVER) || defined(ZCL_USING_ZIGBEE_DIAGNOSTIC_CLIENT)
+#define CHIP_PRINTCLUSTER_ZIGBEE_DIAGNOSTIC { chip::app::Clusters::ZigbeeDiagnostic::Id, "ZigbeeDiagnostic" },
+#else
+#define CHIP_PRINTCLUSTER_ZIGBEE_DIAGNOSTIC
+#endif
+
 #if defined(ZCL_USING_UNIT_TESTING_CLUSTER_SERVER) || defined(ZCL_USING_UNIT_TESTING_CLUSTER_CLIENT)
 #define CHIP_PRINTCLUSTER_UNIT_TESTING_CLUSTER { chip::app::Clusters::UnitTesting::Id, "Unit Testing" },
 #else
@@ -761,6 +767,7 @@
     CHIP_PRINTCLUSTER_APPLICATION_BASIC_CLUSTER                                                                                    \
     CHIP_PRINTCLUSTER_ACCOUNT_LOGIN_CLUSTER                                                                                        \
     CHIP_PRINTCLUSTER_ELECTRICAL_MEASUREMENT_CLUSTER                                                                               \
+    CHIP_PRINTCLUSTER_ZIGBEE_DIAGNOSTIC                                                                                            \
     CHIP_PRINTCLUSTER_UNIT_TESTING_CLUSTER                                                                                         \
     CHIP_PRINTCLUSTER_FAULT_INJECTION_CLUSTER                                                                                      \
     CHIP_PRINTCLUSTER_SAMPLE_MEI_CLUSTER

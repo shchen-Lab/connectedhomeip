@@ -1323,6 +1323,16 @@ static constexpr CommandId Id = 0x00000001;
 } // namespace Commands
 } // namespace ElectricalMeasurement
 
+namespace ZigbeeDiagnostic {
+namespace Commands {
+
+namespace TestDevice {
+static constexpr CommandId Id = 0x00000000;
+} // namespace TestDevice
+
+} // namespace Commands
+} // namespace ZigbeeDiagnostic
+
 namespace UnitTesting {
 namespace Commands {
 

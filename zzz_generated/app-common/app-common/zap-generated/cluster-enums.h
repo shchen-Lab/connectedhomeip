@@ -4056,6 +4056,8 @@ namespace AccountLogin {} // namespace AccountLogin
 
 namespace ElectricalMeasurement {} // namespace ElectricalMeasurement
 
+namespace ZigbeeDiagnostic {} // namespace ZigbeeDiagnostic
+
 namespace UnitTesting {
 
 // Enum for SimpleEnum

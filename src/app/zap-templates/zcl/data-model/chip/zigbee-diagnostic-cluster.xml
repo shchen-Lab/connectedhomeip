@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+Copyright (c) 2021 Project CHIP Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<configurator>
+    <domain name="CHIP"/>
+
+    <cluster>
+        <name>ZigbeeDiagnostic</name>
+        <domain>CHIP</domain>
+        <description>Zigbee Diagnostic cluser</description>
+        <code>0x130D0B05</code>
+        <define>ZIGBEE_DIAGNOSTIC</define>
+        <client tick="false" init="false">true</client>
+        <server tick="false" init="false">true</server>
+        <globalAttribute side="either" code="0xFFFD" value="2"/>
+
+        <attribute side="server" code="0x011C" define="LAST_MESSAGE_LQI"     type="int8u"     optional="true">LastMessageLQI</attribute>
+        <attribute side="server" code="0x011D" define="LAST_MESSAGE_RSSI"    type="int8s"     optional="true">LastMessageRSSI</attribute>
+
+        <command source="client" code="0x00" name="TestDevice" optional="true">
+          <description>TestDevice</description>
+        </command>
+    </cluster>
+</configurator>
