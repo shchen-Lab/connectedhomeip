@@ -47,7 +47,7 @@ class ZigbeeDiagnosticServer : public AttributeAccessInterface
 public:
     static ZigbeeDiagnosticServer & Instance();
     // Register for the Basic cluster on all endpoints.
-    ZigbeeDiagnosticServer() : AttributeAccessInterface(Optional<EndpointId>::Missing(), BasicInformation::Id) {}
+    ZigbeeDiagnosticServer() : AttributeAccessInterface(Optional<EndpointId>::Missing(), ZigbeeDiagnostic::Id) {}
     bool TestDeviceCommand(app::CommandHandler * commandObj, const app::ConcreteCommandPath & commandPath);
     CHIP_ERROR Read(const ConcreteReadAttributePath & aPath, AttributeValueEncoder & aEncoder) override;
     CHIP_ERROR Write(const ConcreteDataAttributePath & aPath, AttributeValueDecoder & aDecoder) override;
@@ -69,6 +69,7 @@ ZigbeeDiagnosticServer & ZigbeeDiagnosticServer::Instance()
 }
 CHIP_ERROR ZigbeeDiagnosticServer::Read(const ConcreteReadAttributePath & aPath, AttributeValueEncoder & aEncoder)
 {
+    printf("1111111111\r\n");
     if (aPath.mClusterId != Clusters::ZigbeeDiagnostic::Id)
     {
         // We shouldn't have been called at all.

@@ -383,5 +383,6 @@ ota-provider-app build and usage.
     ```
 -  TestCommand
     ```shell
-    ./chip-tool any command-by-id 0x130D0B05 0x0000 '{ "0x0": { "0": null, "1": false }}' 123 1
+    ./chip-tool any command-by-id 0x130DFCCE 0x0000 '{ "0x0": { "0": null, "1": false }}' 1 1
+    ./chip-tool any read-by-id 0x130DFCCE  0x011c 1 1
     ```

@@ -1715,7 +1715,7 @@ server cluster ColorControl = 768 {
 }
 
 /** Zigbee Diagnostic cluser */
-server cluster ZigbeeDiagnostic = 319621893 {
+server cluster ZigbeeDiagnostic = 319683790 {
   attribute int8u lastMessageLQI = 284;
   attribute int8s lastMessageRSSI = 285;
   readonly attribute command_id generatedCommandList[] = 65528;

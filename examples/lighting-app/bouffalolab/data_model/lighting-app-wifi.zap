@@ -4444,7 +4444,7 @@
         },
         {
           "name": "ZigbeeDiagnostic",
-          "code": 319621893,
+          "code": 319683790,
           "mfgCode": null,
           "define": "ZIGBEE_DIAGNOSTIC",
           "side": "server",
@@ -4474,7 +4474,7 @@
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
-              "reportableChange": 1
+              "reportableChange": 0
             },
             {
               "name": "LastMessageRSSI",
@@ -4490,7 +4490,7 @@
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
-              "reportableChange": 1
+              "reportableChange": 0
             },
             {
               "name": "GeneratedCommandList",

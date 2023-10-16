@@ -21,7 +21,7 @@ limitations under the License.
         <name>ZigbeeDiagnostic</name>
         <domain>CHIP</domain>
         <description>Zigbee Diagnostic cluser</description>
-        <code>0x130D0B05</code>
+        <code>0x130DFCCE</code>
         <define>ZIGBEE_DIAGNOSTIC</define>
         <client tick="false" init="false">true</client>
         <server tick="false" init="false">true</server>
