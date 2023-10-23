@@ -21,24 +21,27 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// #include "AppEvent.h"
+
 #include "FreeRTOS.h"
 #include "timers.h"
-
 #include <platform/CHIPDeviceLayer.h>
 
 using namespace ::chip;
 using namespace ::chip::DeviceLayer;
 
-#define APP_BUTTON_PRESSED_ITVL 50
-#define APP_BUTTON_PRESS_JITTER 100
+#define APP_BUTTON_PRESS_JITTER 50
 #define APP_BUTTON_PRESS_SHORT 1000
-#define APP_BUTTON_PRESS_LONG 4000
-#define APP_TIMER_EVENT_DEFAULT_ITVL 1000
+#define APP_BUTTON_PRESS_LONG 2000
 
 #define APP_LIGHT_ENDPOINT_ID 1
-#define APP_REBOOT_RESET_COUNT 3
+#define APP_REBOOT_RESET_COUNT 6
 #define APP_REBOOT_RESET_COUNT_KEY "app_reset_cnt"
 
+#define APP_LIGHT_TEMP "app_light_temp"
+#define APP_LIGHT_LEVEL "app_light_level"
+
+#define APP_LIGHT_PROVISION "app_light_provision"
 // Application-defined error codes in the CHIP_ERROR space.
 #define APP_ERROR_EVENT_QUEUE_FAILED CHIP_APPLICATION_ERROR(0x01)
 #define APP_ERROR_CREATE_TASK_FAILED CHIP_APPLICATION_ERROR(0x02)
@@ -52,30 +55,41 @@ struct Identify;
 class AppTask
 {
 public:
-    friend AppTask & GetAppTask(void);
-
     enum app_event_t
     {
         APP_EVENT_NONE = 0x00000000,
 
-        APP_EVENT_TIMER         = 0x00000010,
-        APP_EVENT_BTN_SHORT     = 0x00000020,
-        APP_EVENT_FACTORY_RESET = 0x00000040,
-        APP_EVENT_BTN_LONG      = 0x00000080,
-        APP_EVENT_BTN_ISR       = 0x00000100,
+        APP_EVENT_BTN_FACTORY_RESET_CANCEL = 0x00000002,
+        APP_EVENT_BTN_FACTORY_RESET_IND    = 0x00000004,
+        APP_EVENT_BTN_FACTORY_RESET_PRESS  = 0x00000008,
 
-        APP_EVENT_LIGHTING_ONOFF = 0x00010000,
-        APP_EVENT_LIGHTING_LEVEL = 0x00020000,
-        APP_EVENT_LIGHTING_COLOR = 0x00040000,
-        APP_EVENT_LIGHTING_MASK  = APP_EVENT_LIGHTING_ONOFF | APP_EVENT_LIGHTING_LEVEL | APP_EVENT_LIGHTING_COLOR,
+        APP_EVENT_BTN_ALL_MASK =
+            APP_EVENT_BTN_FACTORY_RESET_CANCEL | APP_EVENT_BTN_FACTORY_RESET_IND | APP_EVENT_BTN_FACTORY_RESET_PRESS,
+        APP_EVENT_TIMER     = 0x00000010,
+        APP_EVENT_BTN_SHORT = 0x00000020,
+
+        APP_EVENT_SYS_BLE_ADV      = 0x00000100,
+        APP_EVENT_SYS_BLE_CONN     = 0x00000200,
+        APP_EVENT_SYS_PROVISIONED  = 0x00000400,
+        APP_EVENT_SYS_LIGHT_TOGGLE = 0x00000800,
+        APP_EVENT_FACTORY_RESET    = 0x00001000,
+
+        APP_EVENT_SYS_ALL_MASK =
+            APP_EVENT_SYS_BLE_ADV | APP_EVENT_SYS_BLE_CONN | APP_EVENT_SYS_PROVISIONED | APP_EVENT_FACTORY_RESET,
+
+        APP_EVENT_LIGHTING_ONOFF      = 0x00010000,
+        APP_EVENT_LIGHTING_LEVEL      = 0x00020000,
+        APP_EVENT_LIGHTING_COLOR      = 0x00040000,
+        APP_EVENT_LIGHTING_GO_THROUGH = 0x00100000,
+        APP_EVENT_LIGHTING_MASK       = APP_EVENT_LIGHTING_ONOFF | APP_EVENT_LIGHTING_LEVEL | APP_EVENT_LIGHTING_COLOR,
 
         APP_EVENT_IDENTIFY_START    = 0x01000000,
         APP_EVENT_IDENTIFY_IDENTIFY = 0x02000000,
         APP_EVENT_IDENTIFY_STOP     = 0x04000000,
         APP_EVENT_IDENTIFY_MASK     = APP_EVENT_IDENTIFY_START | APP_EVENT_IDENTIFY_IDENTIFY | APP_EVENT_IDENTIFY_STOP,
 
-        APP_EVENT_ALL_MASK = APP_EVENT_LIGHTING_MASK | APP_EVENT_TIMER | APP_EVENT_BTN_SHORT | APP_EVENT_BTN_LONG |
-            APP_EVENT_BTN_ISR | APP_EVENT_IDENTIFY_MASK,
+        APP_EVENT_ALL_MASK = APP_EVENT_LIGHTING_MASK | APP_EVENT_BTN_ALL_MASK | APP_EVENT_SYS_ALL_MASK | APP_EVENT_TIMER |
+            APP_EVENT_BTN_SHORT | APP_EVENT_IDENTIFY_MASK,
     };
 
     void SetEndpointId(EndpointId endpointId)
@@ -87,19 +101,21 @@ public:
     EndpointId GetEndpointId(void) { return mEndpointId; }
     void PostEvent(app_event_t event);
     void ButtonEventHandler(uint8_t btnIdx, uint8_t btnAction);
-#ifdef BOOT_PIN_RESET
-    static void ButtonEventHandler(void * arg);
-#endif
 
     static void IdentifyStartHandler(Identify *);
     static void IdentifyStopHandler(Identify *);
     static void IdentifyHandleOp(app_event_t event);
 
 private:
+    friend AppTask & GetAppTask(void);
     friend void StartAppTask(void);
     friend PlatformManagerImpl;
 
+    static void ChipEventHandler(const ChipDeviceEvent * event, intptr_t arg);
     static uint32_t AppRebootCheck(uint32_t time = 0);
+
+    static void LightingSetOnoff(uint8_t bonoff);
+    static void LightingSetStatus(app_event_t status);
 
     static void LightingSetBleAdv(void);
     static void LightingSetProvisioned(void);
@@ -112,9 +128,15 @@ private:
     static void TimerEventHandler(app_event_t event);
     static void TimerCallback(TimerHandle_t xTimer);
 
-#ifdef BOOT_PIN_RESET
+    static void ProvisionLight_Timer_Init(void);
+    static void ProvisionLightTimerCallback(TimerHandle_t xTimer);
+    static void ProvisionLightTimerStart(void);
+    static void ProvisionLightTimerStop(void);
+
+#ifdef LED_BTN_RESET
     static void ButtonInit(void);
     static bool ButtonPressed(void);
+    static void ButtonEventHandler(void * arg);
 #endif
 
     static void ScheduleInit(intptr_t arg);
@@ -129,6 +151,11 @@ private:
     TimerHandle_t sTimer;
     uint32_t mTimerIntvl;
     uint64_t mButtonPressedTime;
+    bool mIsFactoryResetIndicat;
+    bool mIsConnected;
+    bool isProvisioned = true;
+    TimerHandle_t ProvisionLightTimer;
+    uint8_t ProvisionLightTimer_Count;
 
     static StackType_t appStack[APP_TASK_STACK_SIZE / sizeof(StackType_t)];
     static StaticTask_t appTaskStruct;

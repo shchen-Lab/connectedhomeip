@@ -128,9 +128,7 @@ bouffalolab_executable("lighting_app") {
     defines += [ "BOOT_PIN_RESET=16" ]
   }
 
-  if ("BL704LDK" == board) {
-    defines += [ "XT_ZB6_DevKit" ]
-  }
+  defines += [ "BL706_NIGHT_LIGHT" ]
 
   sources = [
     "${example_dir}/common/AppTask.cpp",

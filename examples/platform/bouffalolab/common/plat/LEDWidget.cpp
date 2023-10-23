@@ -15,12 +15,50 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#include <stdio.h>
 
-#include <demo_pwm.h>
+#include <bl_gpio.h>
+#include <bl_sys.h>
 #include <mboard.h>
+#include <demo_pwm.h>
+#include <hosal_gpio.h>
 
 #include "LEDWidget.h"
+
+void LEDWidget::Init()
+{
+#ifdef LED1_PIN
+    mPin = LED1_PIN;
+
+    hosal_gpio_dev_t gpio_led = { .config = OUTPUT_OPEN_DRAIN_NO_PULL, .priv = NULL };
+    gpio_led.port             = mPin;
+
+    hosal_gpio_init(&gpio_led);
+#endif
+    SetOnoff(false);
+}
+
+void LEDWidget::Toggle(void)
+{
+    SetOnoff(1 - mOnoff);
+}
+
+void LEDWidget::SetOnoff(bool state)
+{
+#ifdef LED1_PIN
+    hosal_gpio_dev_t gpio_led = { .port = mPin, .config = OUTPUT_OPEN_DRAIN_NO_PULL, .priv = NULL };
+
+    mOnoff = state;
+
+    if (state)
+    {
+        hosal_gpio_output_set(&gpio_led, 1);
+    }
+    else
+    {
+        hosal_gpio_output_set(&gpio_led, 0);
+    }
+#endif
+}
 
 bool LEDWidget::GetOnoff(void)
 {
@@ -32,8 +70,8 @@ void DimmableLEDWidget::Init()
     mOnoff = light_v = 0;
 
 #ifdef MAX_PWM_CHANNEL
-    demo_pwm_init();
-    demo_pwm_start();
+    demo_hosal_pwm_init();
+    demo_hosal_pwm_start();
 #endif
 }
 
@@ -77,8 +115,8 @@ void ColorLEDWidget::Init()
 {
     mOnoff = light_v = light_s = light_h = 0;
 #ifdef MAX_PWM_CHANNEL
-    demo_pwm_init();
-    demo_pwm_start();
+    demo_hosal_pwm_init();
+    demo_hosal_pwm_start();
 #endif
 }
 
@@ -95,23 +133,52 @@ void ColorLEDWidget::SetOnoff(bool state)
     {
         if (0 == light_v)
         {
-            set_color(254, light_h, light_s);
+            if (mColor_Mode == 2)
+            {
+                set_temperature(254, light_t);
+            }
+            else
+            {
+                set_color(254, light_h, light_s);
+            }
         }
         else
         {
-            set_color(light_v, light_h, light_s);
+            if (mColor_Mode == 2)
+            {
+                set_temperature(light_v, light_t);
+            }
+            else
+            {
+                set_color(light_v, light_h, light_s);
+            }
         }
     }
     else
     {
-        set_color(0, light_h, light_s);
+        if (mColor_Mode == 2)
+        {
+            set_temperature(0, light_t);
+        }
+        else
+        {
+            set_color(0, light_h, light_s);
+        }
     }
 #endif
 }
 
-void ColorLEDWidget::SetLevel(uint8_t level)
+void ColorLEDWidget::SetLevel(uint8_t level, uint8_t color_mode)
 {
-    SetColor(level, light_h, light_s);
+    if (color_mode == 2)
+    {
+        SetTemperature(level, light_t);
+    }
+    else
+    {
+        SetColor(level, light_h, light_s);
+    }
+    mColor_Mode = color_mode;
 }
 
 void ColorLEDWidget::SetColor(uint8_t level, uint8_t hue, uint8_t sat)
@@ -119,8 +186,19 @@ void ColorLEDWidget::SetColor(uint8_t level, uint8_t hue, uint8_t sat)
 #ifdef MAX_PWM_CHANNEL
     set_color(level, hue, sat);
 #endif
-    light_v = level;
-    light_h = hue;
-    light_s = sat;
-    mOnoff  = light_v > 0;
+    light_v     = level;
+    light_h     = hue;
+    light_s     = sat;
+    mOnoff      = light_v > 0;
+    mColor_Mode = 0;
+}
+void ColorLEDWidget::SetTemperature(uint8_t level, uint16_t temperature)
+{
+#ifdef MAX_PWM_CHANNEL
+    set_temperature(level, temperature);
+#endif
+    light_v     = level;
+    light_t     = temperature;
+    mOnoff      = light_v > 0;
+    mColor_Mode = 2;
 }

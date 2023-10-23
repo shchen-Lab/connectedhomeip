@@ -1,6 +1,7 @@
 /*
  *
  *    Copyright (c) 2020 Project CHIP Authors
+ *    Copyright (c) 2019 Google LLC.
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,24 +17,39 @@
  *    limitations under the License.
  */
 
+#include <LEDWidget.h>
+#include <plat.h>
+
 #include <app-common/zap-generated/attributes/Accessors.h>
+#include <app-common/zap-generated/ids/Clusters.h>
 #include <app/clusters/identify-server/identify-server.h>
+#include <app/util/attribute-storage.h>
 
 #include <app/server/Dnssd.h>
 #include <app/server/OnboardingCodesUtil.h>
 #include <app/server/Server.h>
 #include <credentials/DeviceAttestationCredsProvider.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
+#include <lib/support/CHIPMem.h>
+#include <lib/support/CodeUtils.h>
 #include <system/SystemClock.h>
+#ifdef OTA_ENABLED
+#include "OTAConfig.h"
+#endif // OTA_ENABLED
+
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+#include <NetworkCommissioningDriver.h>
+#include <route_hook/bl_route_hook.h>
+#endif
 
 #if HEAP_MONITORING
 #include "MemMonitoring.h"
 #endif
 
 #if CHIP_ENABLE_OPENTHREAD
+#include <ThreadStackManagerImpl.h>
 #include <platform/OpenThread/OpenThreadUtils.h>
 #include <platform/ThreadStackManager.h>
-#include <platform/bouffalolab/common/ThreadStackManagerImpl.h>
 #include <utils_list.h>
 #endif
 
@@ -42,28 +58,16 @@
 #include <lib/shell/Engine.h>
 #endif
 
-#include <LEDWidget.h>
-#include <plat.h>
-
-#include <easyflash.h>
-
 extern "C" {
+#include "mboard.h"
+#include "demo_pwm.h"
 #include <bl_gpio.h>
+#include <easyflash.h>
 #include <hal_gpio.h>
 #include <hosal_gpio.h>
 }
 
 #include "AppTask.h"
-#include "mboard.h"
-
-using namespace ::chip;
-using namespace ::chip::app;
-using namespace ::chip::Credentials;
-using namespace ::chip::DeviceLayer;
-
-#if CONFIG_ENABLE_CHIP_SHELL
-using namespace chip::Shell;
-#endif
 
 namespace {
 
@@ -73,14 +77,16 @@ ColorLEDWidget sLightLED;
 DimmableLEDWidget sLightLED;
 #endif
 
-Identify sIdentify = {
-    APP_LIGHT_ENDPOINT_ID,
-    AppTask::IdentifyStartHandler,
-    AppTask::IdentifyStopHandler,
-    Clusters::Identify::IdentifyTypeEnum::kLightOutput,
-};
-
 } // namespace
+
+using namespace ::chip;
+using namespace ::chip::app;
+using namespace ::chip::Credentials;
+using namespace ::chip::DeviceLayer;
+
+#if CONFIG_ENABLE_CHIP_SHELL
+using namespace chip::Shell;
+#endif
 
 AppTask AppTask::sAppTask;
 StackType_t AppTask::appStack[APP_TASK_STACK_SIZE / sizeof(StackType_t)];
@@ -133,42 +139,33 @@ void AppTask::PostEvent(app_event_t event)
 void AppTask::AppTaskMain(void * pvParameter)
 {
     app_event_t appEvent;
-    bool onoff = false;
+    bool isStateReady = false;
 
-#if !(CHIP_DEVICE_LAYER_TARGET_BL702 && CHIP_DEVICE_CONFIG_ENABLE_ETHERNET)
     sLightLED.Init();
-#endif
-
-#ifdef BOOT_PIN_RESET
+    size_t saved_value_len = 0;
+#ifdef LED_BTN_RESET
     ButtonInit();
 #else
-    /** Without RESET PIN defined, factory reset will be executed if power cycle count(resetCnt) >= APP_REBOOT_RESET_COUNT */
+    
     uint32_t resetCnt      = 0;
-    size_t saved_value_len = 0;
+   
     ef_get_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt), &saved_value_len);
-
-    if (resetCnt > APP_REBOOT_RESET_COUNT)
-    {
-        resetCnt = 0;
-        /** To share with RESET PIN logic, mButtonPressedTime is used to recorded resetCnt increased.
-         * +1 makes sure mButtonPressedTime is not zero;
-         * a power cycle during factory reset confirm time APP_BUTTON_PRESS_LONG will cancel factoryreset */
-        GetAppTask().mButtonPressedTime = System::SystemClock().GetMonotonicMilliseconds64().count() + 1;
-    }
-    else
-    {
-        resetCnt++;
-        GetAppTask().mButtonPressedTime = 0;
-    }
+    resetCnt++;
     ef_set_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt));
+    ChipLogProgress(NotSpecified, "resetCnt %ld \r\n", resetCnt);
 #endif
-
-    GetAppTask().sTimer =
-        xTimerCreate("lightTmr", pdMS_TO_TICKS(APP_TIMER_EVENT_DEFAULT_ITVL), false, NULL, AppTask::TimerCallback);
-    if (GetAppTask().sTimer == NULL)
+    saved_value_len = 0;
+    GetAppTask().isProvisioned=false;
+    ef_get_env_blob(APP_LIGHT_PROVISION, &GetAppTask().isProvisioned, sizeof(GetAppTask().isProvisioned), &saved_value_len);
+    if(GetAppTask().isProvisioned==true)
     {
-        ChipLogError(NotSpecified, "Failed to create timer task");
-        appError(APP_ERROR_EVENT_QUEUE_FAILED);
+        uint8_t level;
+        uint16_t temperature;
+        saved_value_len = 0;
+        ef_get_env_blob(APP_LIGHT_TEMP, &temperature, sizeof(temperature), &saved_value_len);
+        saved_value_len = 0;
+        ef_get_env_blob(APP_LIGHT_LEVEL, &level, sizeof(level), &saved_value_len);
+        sLightLED.SetTemperature(level, temperature);
     }
 
     ChipLogProgress(NotSpecified, "Starting Platform Manager Event Loop");
@@ -179,48 +176,71 @@ void AppTask::AppTaskMain(void * pvParameter)
         appError(ret);
     }
 
-    GetAppTask().PostEvent(APP_EVENT_TIMER);
-    GetAppTask().PostEvent(APP_EVENT_LIGHTING_MASK);
-
+    GetAppTask().PostEvent(AppTask::APP_EVENT_TIMER);
     vTaskSuspend(NULL);
 
-    ChipLogProgress(NotSpecified, "App Task started, with SRAM heap %d left\r\n", xPortGetFreeHeapSize());
+#ifndef LED_BTN_RESET
+    GetAppTask().mButtonPressedTime = chip::System::SystemClock().GetMonotonicMilliseconds64().count() + 1;
+    if (ConnectivityMgr().IsThreadProvisioned())
+    {
+        GetAppTask().PostEvent(APP_EVENT_SYS_PROVISIONED);
+    }
+#endif
+
+    GetAppTask().mIsConnected = false;
+
+    GetAppTask().sTimer = xTimerCreate("lightTmr", pdMS_TO_TICKS(1000), false, NULL, AppTask::TimerCallback);
+    GetAppTask().ProvisionLight_Timer_Init();
+    if (GetAppTask().sTimer == NULL)
+    {
+        ChipLogError(NotSpecified, "Failed to create timer task");
+        appError(APP_ERROR_EVENT_QUEUE_FAILED);
+    }
+
+    ChipLogProgress(NotSpecified, "App Task started, with heap %d left\r\n", xPortGetFreeHeapSize());
+
+    StartTimer();
 
     while (true)
     {
         appEvent                 = APP_EVENT_NONE;
         BaseType_t eventReceived = xTaskNotifyWait(0, APP_EVENT_ALL_MASK, (uint32_t *) &appEvent, portMAX_DELAY);
-
+        if (GetAppTask().mIsConnected == true)
+        {
+            if (Server::GetInstance().GetFabricTable().FabricCount() == 0)
+            {
+                DeviceLayer::ConfigurationMgr().InitiateFactoryReset();
+            }
+        }
         if (eventReceived)
         {
             PlatformMgr().LockChipStack();
-
-            if (APP_EVENT_LIGHTING_MASK & appEvent)
+            if (APP_EVENT_SYS_BLE_ADV & appEvent)
             {
-                LightingUpdate(appEvent);
+                LightingSetStatus(APP_EVENT_SYS_BLE_ADV);
+                LightingUpdate(APP_EVENT_LIGHTING_GO_THROUGH);
+
+                isStateReady = false;
+            }
+
+            if (APP_EVENT_SYS_PROVISIONED & appEvent)
+            {
+                LightingSetStatus(APP_EVENT_SYS_PROVISIONED);
+                LightingUpdate(APP_EVENT_LIGHTING_GO_THROUGH);
+
+                isStateReady = true;
             }
 
             if (APP_EVENT_BTN_SHORT & appEvent)
             {
-                if (Server::GetInstance().GetFabricTable().FabricCount())
-                {
-                    Clusters::OnOff::Attributes::OnOff::Get(GetAppTask().GetEndpointId(), &onoff);
-                    onoff = !onoff;
-                    Clusters::OnOff::Attributes::OnOff::Set(GetAppTask().GetEndpointId(), onoff);
-                }
-                else
-                {
-                    sLightLED.Toggle();
-                }
+                LightingSetStatus(APP_EVENT_SYS_LIGHT_TOGGLE);
+                LightingUpdate(APP_EVENT_LIGHTING_GO_THROUGH);
+            }
+            if ((APP_EVENT_LIGHTING_MASK & appEvent) && isStateReady)
+            {
+                LightingUpdate((app_event_t) (APP_EVENT_LIGHTING_MASK & appEvent));
             }
 
-#ifdef BOOT_PIN_RESET
-            if (APP_EVENT_BTN_LONG & appEvent)
-            {
-                /** Turn off light to indicate button long press for factory reset is confirmed */
-                sLightLED.SetOnoff(false);
-            }
-#endif
             if (APP_EVENT_IDENTIFY_MASK & appEvent)
             {
                 IdentifyHandleOp(appEvent);
@@ -238,67 +258,238 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 }
 
-void AppTask::LightingUpdate(app_event_t status)
+void AppTask::ChipEventHandler(const ChipDeviceEvent * event, intptr_t arg)
 {
-    uint8_t hue, sat;
-    bool onoff;
-    DataModel::Nullable<uint8_t> v(0);
-    EndpointId endpoint = GetAppTask().GetEndpointId();
-
-    if (APP_EVENT_LIGHTING_MASK & status)
+    switch (event->Type)
     {
+    case DeviceEventType::kCHIPoBLEAdvertisingChange:
 
-        if (Server::GetInstance().GetFabricTable().FabricCount())
+#ifndef LED_BTN_RESET
+        if (ConnectivityMgr().IsThreadProvisioned())
         {
-            do
-            {
-                if (EMBER_ZCL_STATUS_SUCCESS != Clusters::OnOff::Attributes::OnOff::Get(endpoint, &onoff))
-                {
-                    break;
-                }
-
-                if (EMBER_ZCL_STATUS_SUCCESS != Clusters::LevelControl::Attributes::CurrentLevel::Get(endpoint, v))
-                {
-                    break;
-                }
-
-                if (EMBER_ZCL_STATUS_SUCCESS != Clusters::ColorControl::Attributes::CurrentHue::Get(endpoint, &hue))
-                {
-                    break;
-                }
-
-                if (EMBER_ZCL_STATUS_SUCCESS != Clusters::ColorControl::Attributes::CurrentSaturation::Get(endpoint, &sat))
-                {
-                    break;
-                }
-
-                if (!onoff)
-                {
-                    sLightLED.SetLevel(0);
-                }
-                else
-                {
-                    if (v.IsNull())
-                    {
-                        v.SetNonNull(254);
-                    }
-#if defined(BL706_NIGHT_LIGHT) || defined(BL602_NIGHT_LIGHT)
-                    sLightLED.SetColor(v.Value(), hue, sat);
-#else
-                    sLightLED.SetLevel(v.Value());
+            GetAppTask().PostEvent(APP_EVENT_SYS_PROVISIONED);
+            break;
+        }
 #endif
-                }
-            } while (0);
+
+        if (ConnectivityMgr().NumBLEConnections())
+        {
+            GetAppTask().PostEvent(APP_EVENT_SYS_BLE_CONN);
         }
         else
         {
-#if defined(BL706_NIGHT_LIGHT) || defined(BL602_NIGHT_LIGHT)
-            /** show yellow to indicate not-provision state for extended color light */
-            sLightLED.SetColor(254, 35, 254);
-#else
-            /** show 30% brightness to indicate not-provision state */
-            sLightLED.SetLevel(25);
+            if (event->CHIPoBLEAdvertisingChange.Result == kActivity_Started)
+            {
+                GetAppTask().PostEvent(APP_EVENT_SYS_BLE_ADV);
+            }
+
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+            GetAppTask().mIsConnected = ConnectivityMgr().IsWiFiStationConnected();
 #endif
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+            GetAppTask().mIsConnected = ConnectivityMgr().IsThreadAttached();
+#endif
+        }
+        ChipLogProgress(NotSpecified, "BLE adv changed, connection number: %d\r\n", ConnectivityMgr().NumBLEConnections());
+        break;
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
+    case DeviceEventType::kThreadStateChange:
+
+        ChipLogProgress(NotSpecified, "Thread state changed, IsThreadAttached: %d\r\n", ConnectivityMgr().IsThreadAttached());
+        if (!GetAppTask().mIsConnected && ConnectivityMgr().IsThreadAttached())
+        {
+            GetAppTask().PostEvent(APP_EVENT_SYS_PROVISIONED);
+            GetAppTask().mIsConnected = true;
+        }
+        break;
+#endif
+
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+    case DeviceEventType::kWiFiConnectivityChange:
+
+        ChipLogProgress(NotSpecified, "Wi-Fi state changed to %s.\r\n",
+                        ConnectivityMgr().IsWiFiStationConnected() ? "connected" : "disconnected");
+
+        chip::app::DnssdServer::Instance().StartServer();
+        NetworkCommissioning::BLWiFiDriver::GetInstance().SaveConfiguration();
+        if (!GetAppTask().mIsConnected && ConnectivityMgr().IsWiFiStationConnected())
+        {
+            GetAppTask().PostEvent(APP_EVENT_SYS_PROVISIONED);
+            GetAppTask().mIsConnected = true;
+        }
+        break;
+
+    case DeviceEventType::kInterfaceIpAddressChanged:
+        if ((event->InterfaceIpAddressChanged.Type == InterfaceIpChangeType::kIpV4_Assigned) ||
+            (event->InterfaceIpAddressChanged.Type == InterfaceIpChangeType::kIpV6_Assigned))
+        {
+            // MDNS server restart on any ip assignment: if link local ipv6 is configured, that
+            // will not trigger a 'internet connectivity change' as there is no internet
+            // connectivity. MDNS still wants to refresh its listening interfaces to include the
+            // newly selected address.
+            chip::app::DnssdServer::Instance().StartServer();
+        }
+
+        if (event->InterfaceIpAddressChanged.Type == InterfaceIpChangeType::kIpV6_Assigned)
+        {
+            ChipLogProgress(NotSpecified, "Initializing route hook...");
+            bl_route_hook_init();
+        }
+        break;
+#endif
+    case DeviceEventType::kFailSafeTimerExpired:
+
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+        GetAppTask().mIsConnected = ConnectivityMgr().IsWiFiStationConnected();
+#endif
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+        GetAppTask().mIsConnected = ConnectivityMgr().IsThreadAttached();
+#endif
+
+        break;
+    default:
+        break;
+    }
+}
+
+void AppTask::LightingUpdate(app_event_t event)
+{
+    uint8_t hue, sat;
+    bool onoff;
+    uint16_t temperature;
+    uint8_t colormode;
+    DataModel::Nullable<uint8_t> v;
+    EndpointId endpoint = GetAppTask().GetEndpointId();
+
+    do
+    {
+        if (EMBER_ZCL_STATUS_SUCCESS != Clusters::OnOff::Attributes::OnOff::Get(endpoint, &onoff))
+        {
+            break;
+        }
+
+        if (EMBER_ZCL_STATUS_SUCCESS != Clusters::LevelControl::Attributes::CurrentLevel::Get(endpoint, v))
+        {
+            break;
+        }
+#if 0
+        if (EMBER_ZCL_STATUS_SUCCESS != Clusters::ColorControl::Attributes::CurrentHue::Get(endpoint, &hue))
+        {
+            break;
+        }
+
+        if (EMBER_ZCL_STATUS_SUCCESS != Clusters::ColorControl::Attributes::CurrentSaturation::Get(endpoint, &sat))
+        {
+            break;
+        }
+#endif
+        if (EMBER_ZCL_STATUS_SUCCESS != Clusters::ColorControl::Attributes::ColorTemperatureMireds::Get(endpoint, &temperature))
+        {
+            break;
+        }
+        if (EMBER_ZCL_STATUS_SUCCESS != Clusters::ColorControl::Attributes::ColorMode::Get(endpoint, &colormode))
+        {
+            break;
+        }
+        if (!onoff)
+        {
+            if (GetAppTask().mIsConnected == true)
+            {
+                sLightLED.SetLevel(0, colormode);
+            }
+        }
+        else
+        {
+            if (v.IsNull())
+            {
+                // Just pick something.
+                v.SetNonNull(254);
+            }
+#if defined(BL706_NIGHT_LIGHT) || defined(BL602_NIGHT_LIGHT)
+
+            if (colormode == 0)
+            {
+                sLightLED.SetColor(v.Value(), hue, sat);
+            }
+            else
+            {
+
+                if (GetAppTask().mIsConnected == true)
+                {
+                    sLightLED.SetTemperature(v.Value(), temperature);
+                }
+            }
+
+#else
+            sLightLED.SetLevel(v.Value());
+#endif
+            if (GetAppTask().mIsConnected == true)
+            {
+               // vTaskDelay(50);
+                ef_set_env_blob(APP_LIGHT_TEMP, &temperature, sizeof(temperature));
+                ef_set_env_blob(APP_LIGHT_LEVEL, &v.Value(), sizeof(v.Value()));
+            }
+  
+        }
+
+    } while (0);
+}
+
+void AppTask::LightingSetOnoff(uint8_t bonoff)
+{
+    uint8_t newValue    = bonoff;
+    EndpointId endpoint = GetAppTask().GetEndpointId();
+
+    // write the new on/off value
+    Clusters::OnOff::Attributes::OnOff::Set(endpoint, newValue);
+    newValue = 254;
+    Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, newValue);
+}
+
+void AppTask::LightingSetStatus(app_event_t status)
+{
+    uint8_t level, hue, sat;
+    uint16_t temperature;
+    bool onoff                = true;
+    EndpointId endpoint       = GetAppTask().GetEndpointId();
+    
+
+    if (APP_EVENT_SYS_LIGHT_TOGGLE == status)
+    {
+
+        Clusters::OnOff::Attributes::OnOff::Get(endpoint, &onoff);
+        onoff = !onoff;
+    }
+    else if (APP_EVENT_SYS_BLE_ADV == status)
+    {
+        GetAppTask().ProvisionLightTimerStart();
+        GetAppTask().isProvisioned = false;
+        ef_set_env_blob(APP_LIGHT_PROVISION, &GetAppTask().isProvisioned, sizeof( GetAppTask().isProvisioned));
+    }
+    else if (APP_EVENT_SYS_PROVISIONED == status)
+    {
+
+        if (GetAppTask().isProvisioned == false)
+        {
+            set_warm_cold_off();
+            vTaskDelay(100);
+            set_cold_temperature();
+            temperature = 370;
+            onoff       = true;
+            level       = 254;
+            Clusters::ColorControl::Attributes::ColorTemperatureMireds::Set(endpoint, temperature);
+            Clusters::LevelControl::Attributes::CurrentLevel::Set(endpoint, level);
+            Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
+            GetAppTask().isProvisioned = true;
+            ef_set_env_blob(APP_LIGHT_PROVISION, & GetAppTask().isProvisioned, sizeof( GetAppTask().isProvisioned));
+            return;
+        }
+        else
+        {
+            GetAppTask().isProvisioned = true;
+            ef_set_env_blob(APP_LIGHT_PROVISION, & GetAppTask().isProvisioned, sizeof( GetAppTask().isProvisioned));
+            onoff = true;
+            Clusters::OnOff::Attributes::OnOff::Set(endpoint, onoff);
         }
     }
 }
@@ -312,7 +503,7 @@ bool AppTask::StartTimer(void)
 
     if (GetAppTask().mTimerIntvl == 0)
     {
-        GetAppTask().mTimerIntvl = APP_TIMER_EVENT_DEFAULT_ITVL;
+        GetAppTask().mTimerIntvl = 1000;
     }
 
     if (xTimerChangePeriod(GetAppTask().sTimer, pdMS_TO_TICKS(GetAppTask().mTimerIntvl), pdMS_TO_TICKS(100)) != pdPASS)
@@ -335,78 +526,117 @@ void AppTask::TimerCallback(TimerHandle_t xTimer)
 
 void AppTask::TimerEventHandler(app_event_t event)
 {
-    uint32_t pressedTime = 0;
-
-    if (GetAppTask().mButtonPressedTime)
+    if (event & APP_EVENT_BTN_FACTORY_RESET_PRESS)
     {
-        pressedTime = System::SystemClock().GetMonotonicMilliseconds64().count() - GetAppTask().mButtonPressedTime;
-#ifdef BOOT_PIN_RESET
-        if (ButtonPressed())
+        GetAppTask().mTimerIntvl = APP_BUTTON_PRESS_JITTER;
+        StartTimer();
+    }
+    else if (event & APP_EVENT_BTN_FACTORY_RESET_IND)
+    {
+        if (GetAppTask().mButtonPressedTime)
         {
-            if (pressedTime > APP_BUTTON_PRESS_LONG)
-            {
-                GetAppTask().PostEvent(APP_EVENT_BTN_LONG);
-            }
-            else if (pressedTime >= APP_BUTTON_PRESS_SHORT)
-            {
-#if defined(BL602_NIGHT_LIGHT) || defined(BL706_NIGHT_LIGHT)
-                /** change color to indicate to wait factory reset confirm */
-                sLightLED.SetColor(254, 0, 210);
-#else
-                /** toggle led to indicate to wait factory reset confirm */
-                sLightLED.Toggle();
+            GetAppTask().mIsFactoryResetIndicat = true;
+#if defined(BL706_NIGHT_LIGHT) || defined(BL602_NIGHT_LIGHT)
+            // sLightLED.SetColor(254, 0, 210);
+#ifndef LED_BTN_RESET
+            uint32_t resetCnt               = 0;
+            GetAppTask().mButtonPressedTime = 0;
+            ef_set_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt));
+
+            vTaskDelay(APP_BUTTON_PRESS_LONG);
+            GetAppTask().PostEvent(APP_EVENT_FACTORY_RESET);
 #endif
-            }
+#else
+            sLightLED.Toggle();
+            GetAppTask().mTimerIntvl = 100;
+            StartTimer();
+#endif
         }
-        else
+    }
+
+    if (event & APP_EVENT_BTN_FACTORY_RESET_CANCEL)
+    {
+        GetAppTask().mTimerIntvl = 1000;
+        StartTimer();
+        if (GetAppTask().mIsFactoryResetIndicat)
         {
-            if (pressedTime >= APP_BUTTON_PRESS_LONG)
+            LightingUpdate(APP_EVENT_LIGHTING_GO_THROUGH);
+        }
+        GetAppTask().mIsFactoryResetIndicat = false;
+        GetAppTask().mButtonPressedTime     = 0;
+    }
+
+    if (APP_EVENT_TIMER & event)
+    {
+        if (GetAppTask().mButtonPressedTime)
+        {
+            if (GetAppTask().mIsFactoryResetIndicat)
             {
-                GetAppTask().PostEvent(APP_EVENT_FACTORY_RESET);
-            }
-            else if (APP_BUTTON_PRESS_SHORT >= pressedTime && pressedTime >= APP_BUTTON_PRESS_JITTER)
-            {
-                GetAppTask().PostEvent(APP_EVENT_BTN_SHORT);
+                if (chip::System::SystemClock().GetMonotonicMilliseconds64().count() - GetAppTask().mButtonPressedTime >=
+                    APP_BUTTON_PRESS_LONG)
+                {
+                    /** factory reset indicat done. */
+                    sLightLED.SetOnoff(false);
+                    GetAppTask().mTimerIntvl = 1000;
+                }
+                else
+                {
+#if !(defined(BL706_NIGHT_LIGHT) || defined(BL602_NIGHT_LIGHT))
+                    sLightLED.Toggle();
+#endif
+                }
             }
             else
             {
-                GetAppTask().PostEvent(APP_EVENT_LIGHTING_MASK);
+
+#if defined(BL706_NIGHT_LIGHT) && !defined(LED_BTN_RESET)
+
+                if (GetAppTask().mButtonPressedTime)
+                {
+                    uint32_t resetCnt = 0;
+
+                    if (chip::System::SystemClock().GetMonotonicMilliseconds64().count() - GetAppTask().mButtonPressedTime >
+                        APP_BUTTON_PRESS_LONG * 2)
+                    {
+                        GetAppTask().mButtonPressedTime = 0;
+                    }
+                    else if (chip::System::SystemClock().GetMonotonicMilliseconds64().count() - GetAppTask().mButtonPressedTime >
+                             APP_BUTTON_PRESS_LONG)
+                    {
+
+                        size_t saved_value_len = 0;
+
+                        ef_get_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt), &saved_value_len);
+                        if (resetCnt >= APP_REBOOT_RESET_COUNT)
+                        {
+                            GetAppTask().PostEvent(APP_EVENT_BTN_FACTORY_RESET_IND);
+                        }
+
+                        /** a power cycle during factory reset indication state will quit factory reset operation */
+                        resetCnt = 0;
+                        ef_set_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt));
+                    }
+                }
+#else
+                if (ButtonPressed())
+                {
+                    if (!GetAppTask().mIsFactoryResetIndicat &&
+                        chip::System::SystemClock().GetMonotonicMilliseconds64().count() - GetAppTask().mButtonPressedTime >=
+                            APP_BUTTON_PRESS_SHORT)
+                    {
+                        GetAppTask().PostEvent(APP_EVENT_BTN_FACTORY_RESET_IND);
+                    }
+                }
+                else
+                {
+                    GetAppTask().PostEvent(APP_EVENT_BTN_FACTORY_RESET_CANCEL);
+                }
+#endif
             }
+        }
 
-            GetAppTask().mTimerIntvl        = APP_BUTTON_PRESSED_ITVL;
-            GetAppTask().mButtonPressedTime = 0;
-        }
-#else
-        if (pressedTime > APP_BUTTON_PRESS_LONG)
-        {
-            /** factory reset confirm timeout */
-            GetAppTask().mButtonPressedTime = 0;
-            GetAppTask().PostEvent(APP_EVENT_FACTORY_RESET);
-        }
-        else
-        {
-#if defined(BL602_NIGHT_LIGHT) || defined(BL706_NIGHT_LIGHT)
-            /** change color to indicate to wait factory reset confirm */
-            sLightLED.SetColor(254, 0, 210);
-#else
-            /** toggle led to indicate to wait factory reset confirm */
-            sLightLED.Toggle();
-#endif
-        }
-#endif
+        StartTimer();
     }
-#ifdef BOOT_PIN_RESET
-    else
-    {
-        if (ButtonPressed())
-        {
-            GetAppTask().mTimerIntvl        = APP_BUTTON_PRESSED_ITVL;
-            GetAppTask().mButtonPressedTime = System::SystemClock().GetMonotonicMilliseconds64().count();
-        }
-    }
-#endif
-
-    StartTimer();
 }
 
 void AppTask::IdentifyStartHandler(Identify *)
@@ -438,9 +668,70 @@ void AppTask::IdentifyHandleOp(app_event_t event)
     if (APP_EVENT_IDENTIFY_STOP & event)
     {
         identifyState = 0;
-        GetAppTask().PostEvent(APP_EVENT_LIGHTING_MASK);
+        LightingUpdate(APP_EVENT_LIGHTING_GO_THROUGH);
         ChipLogProgress(NotSpecified, "identify stop");
     }
+}
+
+void AppTask::ProvisionLight_Timer_Init(void)
+{
+    GetAppTask().ProvisionLightTimer =
+        xTimerCreate("ProvisionLightTmr", pdMS_TO_TICKS(100), pdTRUE, NULL, AppTask::ProvisionLightTimerCallback);
+    if (GetAppTask().ProvisionLightTimer == NULL)
+    {
+        ChipLogError(NotSpecified, "Failed to create timer task");
+    }
+}
+void AppTask::ProvisionLightTimerCallback(TimerHandle_t xTimer)
+{
+
+    if (GetAppTask().mIsConnected == false)
+    {
+        if (GetAppTask().ProvisionLightTimer_Count == 0)
+        {
+            set_cold_temperature();
+            ChipLogError(NotSpecified, "set_cold_temperature");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 10)
+        {
+            set_warm_cold_off();
+            ChipLogError(NotSpecified, "set_coldwarm off");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 11)
+        {
+            set_warm_temperature();
+            ChipLogError(NotSpecified, "set_warm_temperature");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 12)
+        {
+            set_warm_cold_off();
+            ChipLogError(NotSpecified, "set_coldwarm off");
+        }
+        else if (GetAppTask().ProvisionLightTimer_Count == 13)
+        {
+            set_cold_temperature();
+            ChipLogError(NotSpecified, "set_cold_temperature");
+            ProvisionLightTimerStop();
+        }
+    }
+    GetAppTask().ProvisionLightTimer_Count++;
+}
+void AppTask::ProvisionLightTimerStart(void)
+{
+    if (xTimerIsTimerActive(GetAppTask().ProvisionLightTimer) && GetAppTask().ProvisionLightTimer != NULL)
+    {
+        ProvisionLightTimerStop();
+    }
+
+    if (xTimerChangePeriod(GetAppTask().ProvisionLightTimer, pdMS_TO_TICKS(100), 0) != pdPASS)
+    {
+        ChipLogProgress(NotSpecified, "Failed to access timer with 100 ms delay.");
+    }
+}
+void AppTask::ProvisionLightTimerStop(void)
+{
+    xTimerStop(GetAppTask().ProvisionLightTimer, 0);
+    GetAppTask().ProvisionLightTimer_Count = 0;
 }
 
 void AppTask::ButtonEventHandler(uint8_t btnIdx, uint8_t btnAction)
@@ -448,12 +739,13 @@ void AppTask::ButtonEventHandler(uint8_t btnIdx, uint8_t btnAction)
     GetAppTask().PostEvent(APP_EVENT_FACTORY_RESET);
 }
 
-#ifdef BOOT_PIN_RESET
-static hosal_gpio_dev_t gpio_key = { .port = BOOT_PIN_RESET, .config = INPUT_HIGH_IMPEDANCE, .priv = NULL };
+#ifdef LED_BTN_RESET
+hosal_gpio_dev_t gpio_key = { .port = LED_BTN_RESET, .config = INPUT_HIGH_IMPEDANCE, .priv = NULL };
 
 void AppTask::ButtonInit(void)
 {
-    GetAppTask().mButtonPressedTime = 0;
+    GetAppTask().mButtonPressedTime     = 0;
+    GetAppTask().mIsFactoryResetIndicat = false;
 
     hosal_gpio_init(&gpio_key);
     hosal_gpio_irq_set(&gpio_key, HOSAL_IRQ_TRIG_POS_PULSE, GetAppTask().ButtonEventHandler, NULL);
@@ -462,17 +754,43 @@ void AppTask::ButtonInit(void)
 bool AppTask::ButtonPressed(void)
 {
     uint8_t val = 1;
-
     hosal_gpio_input_get(&gpio_key, &val);
-
     return val == 1;
 }
 
 void AppTask::ButtonEventHandler(void * arg)
 {
+    uint32_t presstime;
     if (ButtonPressed())
     {
-        GetAppTask().PostEvent(APP_EVENT_BTN_ISR);
+        hosal_gpio_irq_set(&gpio_key, HOSAL_IRQ_TRIG_NEG_LEVEL, GetAppTask().ButtonEventHandler, NULL);
+
+        GetAppTask().mButtonPressedTime = chip::System::SystemClock().GetMonotonicMilliseconds64().count();
+        GetAppTask().PostEvent(APP_EVENT_BTN_FACTORY_RESET_PRESS);
+    }
+    else
+    {
+        hosal_gpio_irq_set(&gpio_key, HOSAL_IRQ_TRIG_POS_PULSE, GetAppTask().ButtonEventHandler, NULL);
+
+        if (GetAppTask().mButtonPressedTime)
+        {
+
+            presstime = chip::System::SystemClock().GetMonotonicMilliseconds64().count() - GetAppTask().mButtonPressedTime;
+            if (presstime >= APP_BUTTON_PRESS_LONG)
+            {
+                GetAppTask().PostEvent(APP_EVENT_FACTORY_RESET);
+            }
+            else if (presstime <= APP_BUTTON_PRESS_SHORT && presstime >= APP_BUTTON_PRESS_JITTER)
+            {
+                GetAppTask().PostEvent(APP_EVENT_BTN_SHORT);
+            }
+            else
+            {
+                GetAppTask().PostEvent(APP_EVENT_BTN_FACTORY_RESET_CANCEL);
+            }
+        }
+
+        GetAppTask().mButtonPressedTime = 0;
     }
 }
 #endif

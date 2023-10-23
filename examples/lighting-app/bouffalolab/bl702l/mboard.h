@@ -39,16 +39,22 @@
 
 #ifdef BL706_NIGHT_LIGHT
 
-#define LED_B_PIN_PORT 2
-#define LED_B_PIN 12
+#define LED_B_PIN_PORT 0
+#define LED_B_PIN 0
 
-#define LED_R_PIN_PORT 0
-#define LED_R_PIN 10
+#define LED_R_PIN_PORT 3
+#define LED_R_PIN 3
 
-#define LED_G_PIN_PORT 1
-#define LED_G_PIN 16
+#define LED_G_PIN_PORT 4
+#define LED_G_PIN 9
 
-#define MAX_PWM_CHANNEL 3
+#define LED_C_PIN_PORT 1
+#define LED_C_PIN 21
+
+#define LED_W_PIN_PORT 2
+#define LED_W_PIN 22
+
+#define MAX_PWM_CHANNEL 5
 
 #elif defined(XT_ZB6_DevKit)
 
@@ -73,6 +79,10 @@
 
 #define MAX_PWM_CHANNEL 1
 
+#endif
+
+#if defined(BOARD_BTN_BOOT_PIN)
+#define LED_BTN_RESET 16
 #endif
 
 #define SPI_WIFI_MISO_PIN 4

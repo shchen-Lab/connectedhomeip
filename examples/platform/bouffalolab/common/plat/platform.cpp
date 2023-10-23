@@ -95,76 +95,6 @@ FactoryDataProvider sFactoryDataProvider;
 
 static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 
-void ChipEventHandler(const ChipDeviceEvent * event, intptr_t arg)
-{
-    switch (event->Type)
-    {
-    case DeviceEventType::kCHIPoBLEAdvertisingChange:
-        ChipLogProgress(NotSpecified, "BLE adv changed, connection number: %d", ConnectivityMgr().NumBLEConnections());
-        break;
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-    case DeviceEventType::kThreadStateChange:
-
-        if (ConnectivityMgr().IsThreadAttached())
-        {
-            chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(OTAConfig::kInitOTARequestorDelaySec),
-                                                        OTAConfig::InitOTARequestorHandler, nullptr);
-        }
-        break;
-#endif
-
-#if CHIP_DEVICE_CONFIG_ENABLE_WIFI || CHIP_DEVICE_CONFIG_ENABLE_ETHERNET
-    case DeviceEventType::kInterfaceIpAddressChanged:
-        if ((event->InterfaceIpAddressChanged.Type == InterfaceIpChangeType::kIpV4_Assigned) ||
-            (event->InterfaceIpAddressChanged.Type == InterfaceIpChangeType::kIpV6_Assigned))
-        {
-            // MDNS server restart on any ip assignment: if link local ipv6 is configured, that
-            // will not trigger a 'internet connectivity change' as there is no internet
-            // connectivity. MDNS still wants to refresh its listening interfaces to include the
-            // newly selected address.
-
-            chip::app::DnssdServer::Instance().StartServer();
-
-            bl_route_hook_init();
-
-            chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(OTAConfig::kInitOTARequestorDelaySec),
-                                                        OTAConfig::InitOTARequestorHandler, nullptr);
-        }
-        break;
-#endif
-    case DeviceEventType::kInternetConnectivityChange:
-        if (event->InternetConnectivityChange.IPv4 == kConnectivity_Established)
-        {
-            ChipLogProgress(NotSpecified, "IPv4 connectivity ready...");
-        }
-        else if (event->InternetConnectivityChange.IPv4 == kConnectivity_Lost)
-        {
-            ChipLogProgress(NotSpecified, "Lost IPv4 connectivity...");
-        }
-        if (event->InternetConnectivityChange.IPv6 == kConnectivity_Established)
-        {
-            ChipLogProgress(NotSpecified, "IPv6 connectivity ready...");
-        }
-        else if (event->InternetConnectivityChange.IPv6 == kConnectivity_Lost)
-        {
-            ChipLogProgress(NotSpecified, "Lost IPv6 connectivity...");
-        }
-        break;
-    case DeviceEventType::kCHIPoBLEConnectionEstablished:
-        ChipLogProgress(NotSpecified, "BLE connection established");
-        break;
-    case DeviceEventType::kCHIPoBLEConnectionClosed:
-        ChipLogProgress(NotSpecified, "BLE disconnected");
-        break;
-    case DeviceEventType::kCommissioningComplete:
-        ChipLogProgress(NotSpecified, "Commissioning complete");
-        GetAppTask().PostEvent(AppTask::APP_EVENT_LIGHTING_MASK);
-        break;
-    default:
-        break;
-    }
-}
-
 CHIP_ERROR PlatformManagerImpl::PlatformInit(void)
 {
     chip::RendezvousInformationFlags rendezvousMode(chip::RendezvousInformationFlag::kOnNetwork);
@@ -254,7 +184,7 @@ CHIP_ERROR PlatformManagerImpl::PlatformInit(void)
 #endif
     PrintOnboardingCodes(rendezvousMode);
 
-    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
+    PlatformMgr().AddEventHandler(AppTask::ChipEventHandler, 0);
 
 #if PW_RPC_ENABLED
     chip::rpc::Init();
