@@ -34,13 +34,18 @@ extern "C" {
 #else
 #include <ble_lib_api.h>
 #endif
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+#include <multi_adv.h>
+#endif
 }
 
 #include <bluetooth/addr.h>
 #include <hci_driver.h>
 
 #include "BLEManagerImpl.h"
-
+#ifdef BOUFFALOLAB_BLE_PRO_ENABLE
+#include "NetworkCommissioningDriver.h"
+#endif
 using namespace ::chip;
 using namespace ::chip::Ble;
 using namespace ::chip::System;
@@ -64,7 +69,13 @@ const ChipBleUUID chipUUID_CHIPoBLEChar_TX = { { 0x18, 0xEE, 0x2E, 0xF5, 0x26, 0
 const bt_uuid_128 UUID128_CHIPoBLEChar_C3 =
     BT_UUID_INIT_128(0x04, 0x8F, 0x21, 0x83, 0x8A, 0x74, 0x7D, 0xB8, 0xF2, 0x45, 0x72, 0x87, 0x38, 0x02, 0x63, 0x64);
 #endif
-
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+bt_uuid_16 UUID16_BLoBLEService = BT_UUID_INIT_16(0xFFF0);
+const bt_uuid_16 UUID16_BLoBLEChar_RX =BT_UUID_INIT_16(0xFFF1);
+const bt_uuid_16 UUID16_BLoBLEChar_TX =BT_UUID_INIT_16(0xFFF2);
+_bt_gatt_ccc BLoBLEChar_TX_CCC = BT_GATT_CCC_INITIALIZER(nullptr, BLEManagerImpl::HandleBLTXCCCWrite, nullptr);
+static const int kBLoBLE_CCC_AttributeIndex = 8;
+#endif
 _bt_gatt_ccc CHIPoBLEChar_TX_CCC = BT_GATT_CCC_INITIALIZER(nullptr, BLEManagerImpl::HandleTXCCCWrite, nullptr);
 
 struct bt_gatt_attr sChipoBleAttributes[] = {
@@ -77,6 +88,14 @@ struct bt_gatt_attr sChipoBleAttributes[] = {
     BT_GATT_CHARACTERISTIC(&UUID128_CHIPoBLEChar_C3.uuid, BT_GATT_CHRC_READ, BT_GATT_PERM_READ, BLEManagerImpl::HandleC3Read,
                            nullptr, nullptr),
 #endif
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+    BT_GATT_PRIMARY_SERVICE(&UUID16_BLoBLEService.uuid),
+    BT_GATT_CHARACTERISTIC(&UUID16_BLoBLEChar_RX.uuid, BT_GATT_CHRC_WRITE | BT_GATT_CHRC_WRITE_WITHOUT_RESP,
+                           BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, nullptr, BLEManagerImpl::HandleBLRXWrite, nullptr),
+    BT_GATT_CHARACTERISTIC(&UUID16_BLoBLEChar_TX.uuid, BT_GATT_CHRC_INDICATE, BT_GATT_PERM_NONE, nullptr, nullptr, nullptr),
+    BT_GATT_CCC_MANAGED(&BLoBLEChar_TX_CCC, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+#endif
+
 };
 
 struct bt_gatt_service sChipoBleService = {
@@ -251,7 +270,23 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
     const bt_data scanResponseData[]    = { BT_DATA(BT_DATA_NAME_COMPLETE, deviceName, deviceNameSize) };
     const bt_data * scanResponseDataPtr = deviceNameSize > 0 ? scanResponseData : nullptr;
     const size_t scanResponseDataLen    = deviceNameSize > 0 ? sizeof(scanResponseData) / sizeof(scanResponseData[0]) : 0u;
-
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    bt_le_adv_param advParams1;
+    ble_instant[0]=0;
+    ble_instant[1]=0;
+    advParams1.id           = BT_ID_DEFAULT;
+    advParams1.options      = BT_LE_ADV_OPT_CONNECTABLE | BT_LE_ADV_OPT_ONE_TIME;
+    advParams1.interval_min = intervalMin;
+    advParams1.interval_max = intervalMax;
+    const char * device1Name             = "shchen-dev";
+    const uint8_t device1NameSize        = static_cast<uint8_t>(strlen(device1Name));
+    const uint8_t advFlags1          = BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR;
+    const bt_data advertisingData1[] = { BT_DATA(BT_DATA_FLAGS, &advFlags1, sizeof(advFlags1)),
+                                        BT_DATA(BT_DATA_NAME_COMPLETE, &device1Name, device1NameSize) };
+    const bt_data scanResponseData1[]    = { BT_DATA(BT_DATA_NAME_COMPLETE, device1Name, device1NameSize) };
+    const bt_data * scanResponseDataPtr1 = device1NameSize > 0 ? scanResponseData1 : nullptr;
+    const size_t scanResponseDataLen1    = device1NameSize > 0 ? sizeof(scanResponseData1) / sizeof(scanResponseData1[0]) : 0u;
+ #endif
     // Register dynamically CHIPoBLE GATT service
     if (!mFlags.Has(Flags::kChipoBleGattServiceRegister))
     {
@@ -287,11 +322,28 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
     }
 
     // Restart advertising
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    if(true==bt_le_multi_adv_id_is_vaild(ble_instant[0]))
+    {
+        err = bt_le_multi_adv_stop(ble_instant[0]);
+    }
+    if(true==bt_le_multi_adv_id_is_vaild(ble_instant[1]))
+    {
+        err = bt_le_multi_adv_stop(ble_instant[1]);
+    }
+#else
     err = bt_le_adv_stop();
+#endif
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
-
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    err = bt_le_multi_adv_start(&advParams, advertisingData, sizeof(advertisingData) / sizeof(advertisingData[0]), scanResponseDataPtr,
+                          scanResponseDataLen,&ble_instant[0]);
+    err = bt_le_multi_adv_start(&advParams1, advertisingData1, sizeof(advertisingData1) / sizeof(advertisingData1[0]), scanResponseDataPtr1,
+                          scanResponseDataLen1,&ble_instant[1]);
+#else
     err = bt_le_adv_start(&advParams, advertisingData, sizeof(advertisingData) / sizeof(advertisingData[0]), scanResponseDataPtr,
                           scanResponseDataLen);
+#endif
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
 
     // Transition to the Advertising state...
@@ -323,7 +375,19 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising(void)
 
 CHIP_ERROR BLEManagerImpl::StopAdvertising(void)
 {
-    int err = bt_le_adv_stop();
+    int err=0;
+#ifdef BOUFFALOLAB_BLE_MULTI_ADV
+    if(true==bt_le_multi_adv_id_is_vaild(ble_instant[0]))
+    {
+        err = bt_le_multi_adv_stop(ble_instant[0]);
+    }
+    if(true==bt_le_multi_adv_id_is_vaild(ble_instant[1]))
+    {
+        err = bt_le_multi_adv_stop(ble_instant[1]);
+    }
+#else
+    err= bt_le_adv_stop();
+#endif
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
 
     // Transition to the not Advertising state...
@@ -456,6 +520,7 @@ CHIP_ERROR BLEManagerImpl::HandleGAPDisconnect(const ChipDeviceEvent * event)
     }
 
 exit:
+
     // Unref bt_conn before scheduling DriveBLEState.
     bt_conn_unref(connEvent->BtConn);
 
@@ -798,7 +863,69 @@ void BLEManagerImpl::HandleTXIndicated(struct bt_conn * conId, IndicationAttrTyp
 
     PlatformMgr().PostEventOrDie(&event);
 }
+#if BOUFFALOLAB_BLE_DATA_ENABLE
+ssize_t BLEManagerImpl::HandleBLRXWrite(struct bt_conn * conId, const struct bt_gatt_attr * attr, const void * buf, uint16_t len,
+                                      uint16_t offset, uint8_t flags)
+{
 
+#ifdef BOUFFALOLAB_BLE_PRO_ENABLE
+//Test 
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    const char *ssid="HUAWEI-10G70W";
+    const char *password="Wa1987Wj";
+    CHIP_ERROR error = chip::DeviceLayer::NetworkCommissioning::BLWiFiDriver::GetInstance().ConnectWiFiNetwork(
+    ssid, strlen(ssid), password, strlen(password));
+
+    ByteSpan custom_ssid((uint8_t*)ssid, (uint32_t)strlen(ssid));
+    ByteSpan custom_credentials((uint8_t*)password, (uint32_t)strlen(password));
+    error=chip::DeviceLayer::NetworkCommissioning::BLWiFiDriver::GetInstance().Custom_CommitConfiguration(custom_ssid,custom_credentials);
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+#endif
+    return len;
+}
+bool BLEManagerImpl::HandleBLTXCCCWrite(struct bt_conn * conId, const struct bt_gatt_attr * attr, uint16_t value)
+{
+    if (value != BT_GATT_CCC_INDICATE && value != 0)
+    {
+        return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
+    }
+
+    return sizeof(value);
+}
+
+
+bool BLEManagerImpl::BLSendIndication(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
+                                    PacketBufferHandle pBuf)
+{
+    CHIP_ERROR err                   = CHIP_NO_ERROR;
+    int status                       = 0;
+    uint8_t index                    = bt_conn_index(conId);
+    bt_gatt_indicate_params * params = &mIndicateParams[index];
+
+    VerifyOrExit(IsSubscribed(conId) == true, err = CHIP_ERROR_INVALID_ARGUMENT);
+
+    ChipLogDetail(DeviceLayer, "Sending indication for CHIPoBLE TX characteristic (ConnId %02x, len %u)", index,
+                  pBuf->DataLength());
+
+    params->uuid = nullptr;
+    params->attr = &sChipoBleAttributes[kBLoBLE_CCC_AttributeIndex];
+    params->func = HandleTXIndicated;
+    params->data = pBuf->Start();
+    params->len  = pBuf->DataLength();
+
+    status = bt_gatt_indicate(conId, params);
+    VerifyOrExit(status == 0, err = MapErrorZephyr(status));
+
+exit:
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "BLEManagerImpl::SendIndication() failed: %." CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(DeviceLayer, "BLEManagerImpl::SendIndication() failed: %d", status);
+    }
+
+    return err == CHIP_NO_ERROR;
+}
+#endif
 void BLEManagerImpl::HandleConnect(struct bt_conn * conId, uint8_t err)
 {
     ChipDeviceEvent event;
@@ -821,9 +948,8 @@ exit:
 void BLEManagerImpl::HandleDisconnect(struct bt_conn * conId, uint8_t reason)
 {
     ChipDeviceEvent event;
-
+    
     PlatformMgr().LockChipStack();
-
     // Don't handle BLE disconnecting events when it is not related to CHIPoBLE
     VerifyOrExit(sInstance.mFlags.Has(Flags::kChipoBleGattServiceRegister), );
 
@@ -832,7 +958,6 @@ void BLEManagerImpl::HandleDisconnect(struct bt_conn * conId, uint8_t reason)
     event.Platform.BleConnEvent.HciResult = reason;
 
     PlatformMgr().PostEventOrDie(&event);
-
 exit:
     PlatformMgr().UnlockChipStack();
 }

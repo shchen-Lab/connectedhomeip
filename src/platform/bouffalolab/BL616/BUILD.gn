@@ -53,6 +53,9 @@ static_library("BL616") {
   }
 
   if (chip_enable_ble) {
+    defines = [ "BOUFFALOLAB_BLE_DATA_ENABLE=1" ]
+    defines +=[ "BOUFFALOLAB_BLE_MULTI_ADV=1"   ]
+    
     sources += [
       "../common/BLEManagerImpl.cpp",
       "../common/BLEManagerImpl.h",
