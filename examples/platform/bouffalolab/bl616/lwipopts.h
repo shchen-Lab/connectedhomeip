@@ -124,7 +124,7 @@
 #define LWIP_SO_SNDTIMEO          1
 #define SO_REUSE                  1
 #define LWIP_TCP_KEEPALIVE        1
-
+#define LWIP_NETIF_HOSTNAME       1
 #define LWIP_IGMP                 1
 #define LWIP_IPV6 1
 #define LWIP_IPV6_DHCP6 1
