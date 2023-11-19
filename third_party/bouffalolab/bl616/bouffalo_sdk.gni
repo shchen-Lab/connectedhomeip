@@ -854,6 +854,8 @@ template("bouffalo_sdk") {
 
     defines = [
       "CONFIG_LWIP",
+      "CONFIG_MAC_TXQ_DEPTH=8",
+      "CONFIG_MAC_RXQ_DEPTH=8",
     ]
   }
 
