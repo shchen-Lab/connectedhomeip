@@ -654,6 +654,9 @@ template("bouffalo_sdk") {
 
     cflags_c = [
       "-Wno-sign-compare",
+      "-Wno-format",
+      "-Wno-format-nonliteral",
+      "-Wno-format-security",
     ]
 
     configs += [
