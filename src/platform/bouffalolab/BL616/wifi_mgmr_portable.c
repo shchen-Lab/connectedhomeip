@@ -37,6 +37,7 @@ int wifi_start_scan(const uint8_t * ssid, uint32_t length)
     memset(&config, 0, sizeof(wifi_mgmr_scan_params_t));
     if (length && length <= MGMR_SSID_LEN) {
         memcpy(config.ssid_array, ssid, length);
+        config.ssid_length = length;
     }
 
     return wifi_mgmr_sta_scan(&config);
