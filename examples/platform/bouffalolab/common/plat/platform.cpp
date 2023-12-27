@@ -16,7 +16,6 @@
  *    limitations under the License.
  */
 #include <DeviceInfoProviderImpl.h>
-#include <OTAConfig.h>
 #include <app/server/Dnssd.h>
 #include <app/server/OnboardingCodesUtil.h>
 #include <app/server/Server.h>
@@ -125,8 +124,6 @@ void ChipEventHandler(const ChipDeviceEvent * event, intptr_t arg)
 
             bl_route_hook_init();
 
-            chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Seconds32(OTAConfig::kInitOTARequestorDelaySec),
-                                                        OTAConfig::InitOTARequestorHandler, nullptr);
         }
 
         break;

@@ -133,7 +133,7 @@ bouffalolab_executable("lighting_app") {
     "${examples_plat_dir}/common/bouffalo_sdk/platform_port.c",
 #    "${examples_plat_dir}/common/bouffalo_sdk/uart.c",
     "${examples_plat_dir}/common/plat/LEDWidget.cpp",
-    "${examples_plat_dir}/common/plat/OTAConfig.cpp",
+#    "${examples_plat_dir}/common/plat/OTAConfig.cpp",
     "${examples_plat_dir}/common/plat/main.cpp",
     "${examples_plat_dir}/common/plat/platform.cpp",
   ]
