@@ -658,6 +658,7 @@ def BuildBouffalolabTarget():
     # Apps
     target.AppendFixedTargets([
         TargetPart('light', app=BouffalolabApp.LIGHT),
+        TargetPart('air-purifier', app=BouffalolabApp.AIR_PURIFIER),
     ])
 
     target.AppendModifier('shell', enable_shell=True)

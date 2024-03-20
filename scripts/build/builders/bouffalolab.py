@@ -21,22 +21,28 @@ from .gn import GnBuilder
 
 class BouffalolabApp(Enum):
     LIGHT = auto()
-
+    AIR_PURIFIER = auto()
     def ExampleName(self):
         if self == BouffalolabApp.LIGHT:
             return 'lighting-app'
+        elif self == BouffalolabApp.AIR_PURIFIER:
+            return 'air-purifier-app'
         else:
             raise Exception('Unknown app type: %r' % self)
 
     def AppNamePrefix(self, chip_name):
         if self == BouffalolabApp.LIGHT:
             return ('chip-%s-lighting-example' % chip_name)
+        elif self == BouffalolabApp.AIR_PURIFIER:
+            return ('chip-%s-air-purifier-app-example' % chip_name)
         else:
             raise Exception('Unknown app type: %r' % self)
 
     def FlashBundleName(self):
         if self == BouffalolabApp.LIGHT:
             return 'lighting_app.flashbundle.txt'
+        elif self == BouffalolabApp.AIR_PURIFIER:
+            return 'air_purifier_app.flashbundle.txt'
         else:
             raise Exception('Unknown app type: %r' % self)
 
