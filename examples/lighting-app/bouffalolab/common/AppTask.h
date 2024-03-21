@@ -36,6 +36,8 @@ using namespace ::chip::DeviceLayer;
 #define APP_TIMER_EVENT_DEFAULT_ITVL 1000
 
 #define APP_LIGHT_ENDPOINT_ID 1
+#define AIR_FAN_ENDPOINT 2
+
 #define APP_REBOOT_RESET_COUNT 3
 #define APP_REBOOT_RESET_COUNT_KEY "app_reset_cnt"
 

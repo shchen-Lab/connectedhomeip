@@ -130,6 +130,7 @@ bouffalolab_executable("lighting_app") {
     "${chip_root}/examples/providers/DeviceInfoProviderImpl.cpp",
     "${example_dir}/common/AppTask.cpp",
     "${example_dir}/common/ZclCallbacks.cpp",
+    "${example_dir}/common/src/air-fan-manager.cpp",
     "${examples_plat_dir}/common/iot_sdk/aos_task.c",
     "${examples_plat_dir}/common/iot_sdk/demo_pwm.c",
     "${examples_plat_dir}/common/iot_sdk/platform_port.cpp",
@@ -152,6 +153,7 @@ bouffalolab_executable("lighting_app") {
   include_dirs = [
     "${chip_root}/src/platform/bouffalolab/BL602",
     "${example_dir}/common",
+    "${example_dir}/common/include",
     "${example_dir}/bl602",
     "${examples_plat_dir}/bl602/lwipopts",
     "${examples_plat_dir}/common/route_hook",

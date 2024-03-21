@@ -55,7 +55,7 @@ extern "C" {
 
 #include "AppTask.h"
 #include "mboard.h"
-
+#include <air-fan-manager.h>
 using namespace ::chip;
 using namespace ::chip::app;
 using namespace ::chip::Credentials;
@@ -163,6 +163,11 @@ void AppTask::AppTaskMain(void * pvParameter)
     ef_set_env_blob(APP_REBOOT_RESET_COUNT_KEY, &resetCnt, sizeof(resetCnt));
 #endif
 
+
+    SetParentEndpointForEndpoint(APP_LIGHT_ENDPOINT_ID, AIR_FAN_ENDPOINT);
+
+    chip::app::Clusters::FanManager::InitInstance(EndpointId(AIR_FAN_ENDPOINT));
+                                     
     GetAppTask().sTimer =
         xTimerCreate("lightTmr", pdMS_TO_TICKS(APP_TIMER_EVENT_DEFAULT_ITVL), false, NULL, AppTask::TimerCallback);
     if (GetAppTask().sTimer == NULL)

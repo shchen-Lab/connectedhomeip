@@ -27,7 +27,7 @@
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <app/ConcreteAttributePath.h>
 #include <lib/support/logging/CHIPLogging.h>
-
+#include <air-fan-manager.h>
 using namespace ::chip;
 using namespace ::chip::app::Clusters;
 
@@ -68,6 +68,12 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
         ChipLogProgress(Zcl, "Identify attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                         ChipLogValueMEI(attributeId), type, *value, size);
     }
+    else if (FanManager::GetInstance() != nullptr)
+    {
+        FanManager::GetInstance()->PostAttributeChangeCallback(attributePath.mEndpointId, attributePath.mClusterId,
+                                                                       attributePath.mAttributeId, type, size, value);
+    }
+
 }
 
 /** @brief OnOff Cluster Init
