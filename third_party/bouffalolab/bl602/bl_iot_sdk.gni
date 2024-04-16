@@ -592,6 +592,7 @@ template("bl_iot_sdk") {
       "CONFIG_BT_L2CAP_DYNAMIC_CHANNEL",
       "CONFIG_BT_GATT_CLIENT",
       "CONFIG_BT_CONN=1",
+      "CONFIG_BT_OBSERVER=1",
       "CONFIG_BT_GATT_DIS_PNP",
       "CONFIG_BT_GATT_DIS_SERIAL_NUMBER",
       "CONFIG_BT_GATT_DIS_FW_REV",
@@ -603,7 +604,7 @@ template("bl_iot_sdk") {
       "CONFIG_BT_SETTINGS_USE_PRINTK",
     ]
 
-    libs = [ "${bl_iot_sdk_root}/components/network/ble/blecontroller_602_m0s1/lib/libblecontroller_602_m0s1.a" ]
+    libs = [ "${bl_iot_sdk_root}/components/network/ble/blecontroller_602_m0s1s/lib/libblecontroller_602_m0s1s.a" ]
 
     include_dirs = [
       "${bl_iot_sdk_root}/components/network/ble/blestack/src/common",

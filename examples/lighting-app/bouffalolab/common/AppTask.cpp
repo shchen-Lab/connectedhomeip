@@ -55,7 +55,9 @@ extern "C" {
 
 #include "AppTask.h"
 #include "mboard.h"
-
+#include <bluetooth/addr.h>
+#include <hci_driver.h>
+#include <bluetooth.h>
 using namespace ::chip;
 using namespace ::chip::app;
 using namespace ::chip::Credentials;
@@ -194,7 +196,6 @@ void AppTask::AppTaskMain(void * pvParameter)
         if (eventReceived)
         {
             PlatformMgr().LockChipStack();
-
             if (APP_EVENT_LIGHTING_MASK & appEvent)
             {
                 LightingUpdate(appEvent);
@@ -206,6 +207,14 @@ void AppTask::AppTaskMain(void * pvParameter)
                 {
                     Clusters::OnOff::Attributes::OnOff::Get(GetAppTask().GetEndpointId(), &onoff);
                     onoff = !onoff;
+                    if(onoff)
+                    {
+                        ble_start_scan();
+                    }
+                    else
+                    {
+                        ble_stop_scan();
+                    }
                     Clusters::OnOff::Attributes::OnOff::Set(GetAppTask().GetEndpointId(), onoff);
                 }
                 else
@@ -479,3 +488,39 @@ void AppTask::ButtonEventHandler(void * arg)
     }
 }
 #endif
+void AppTask::device_found(const bt_addr_le_t *addr, s8_t rssi, u8_t evtype,
+			 struct net_buf_simple *buf)
+{
+	char 		le_addr[BT_ADDR_LE_STR_LEN];
+	bt_addr_le_to_str(addr, le_addr, sizeof(le_addr));
+	
+	 ChipLogProgress(NotSpecified,"[DEVICE]: %s, AD evt type %u, RSSI %i\r\n",le_addr, evtype, rssi);
+}
+void AppTask::ble_start_scan(void)
+{
+    struct bt_le_scan_param scan_param = {
+        .type       = BT_HCI_LE_SCAN_PASSIVE,
+        .filter_dup = BT_HCI_LE_SCAN_FILTER_DUP_ENABLE,
+        .interval   = BT_GAP_SCAN_SLOW_INTERVAL_1,
+        .window     = BT_GAP_SCAN_SLOW_INTERVAL_1 };
+
+    int err = bt_le_scan_start(&scan_param, device_found);
+    
+    if(err){
+        ChipLogProgress(NotSpecified,"Failed to start scan (err %d) \r\n", err);
+    }else{
+        ChipLogProgress(NotSpecified,"Start scan successfully \r\n");
+        ChipLogProgress(NotSpecified, "App Task started, with SRAM heap %d left\r\n", xPortGetFreeHeapSize());
+    }
+}
+void AppTask::ble_stop_scan(void)
+{
+    int err = bt_le_scan_stop();
+    
+    if(err){
+        ChipLogProgress(NotSpecified,"Failed to start scan (err %d) \r\n", err);
+    }else{
+        ChipLogProgress(NotSpecified,"Start scan successfully \r\n");
+        ChipLogProgress(NotSpecified, "App Task started, with SRAM heap %d left\r\n", xPortGetFreeHeapSize());
+    }
+}

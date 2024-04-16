@@ -74,7 +74,6 @@
 
 #include <AppTask.h>
 #include <plat.h>
-
 using namespace ::chip;
 using namespace ::chip::app;
 using namespace ::chip::Credentials;
@@ -158,6 +157,7 @@ void ChipEventHandler(const ChipDeviceEvent * event, intptr_t arg)
         break;
     case DeviceEventType::kCommissioningComplete:
         ChipLogProgress(NotSpecified, "Commissioning complete");
+        ChipLogProgress(NotSpecified, "App Task started, with SRAM heap %d left\r\n", xPortGetFreeHeapSize());
         GetAppTask().PostEvent(AppTask::APP_EVENT_LIGHTING_MASK);
         break;
     default:

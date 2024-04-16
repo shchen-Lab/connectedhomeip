@@ -466,6 +466,7 @@ exit:
     ReturnErrorOnFailure(PlatformMgr().PostEvent(&disconnectEvent));
     if (mFlags.Has(Flags::kChipoBleShutDown))
     {
+        #if 0
         int ret = bt_disable();
         if (ret)
         {
@@ -475,6 +476,7 @@ exit:
         {
             mFlags.Clear(Flags::kChipoBleShutDown);
         }
+        #endif
         return CHIP_NO_ERROR;
     }
     // Force a reconfiguration of advertising in case we switched to non-connectable mode when

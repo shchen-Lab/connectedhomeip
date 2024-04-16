@@ -23,7 +23,7 @@
 
 #include "FreeRTOS.h"
 #include "timers.h"
-
+#include <hci_driver.h>
 #include <platform/CHIPDeviceLayer.h>
 
 using namespace ::chip;
@@ -122,7 +122,10 @@ private:
 
     static CHIP_ERROR StartAppShellTask();
     static void AppShellTask(void * args);
-
+    static void device_found(const bt_addr_le_t *addr, s8_t rssi, u8_t evtype,
+			 struct net_buf_simple *buf);
+    static void ble_start_scan(void);
+    static void ble_stop_scan(void);
     EndpointId mEndpointId = (EndpointId) 1;
     TaskHandle_t sAppTaskHandle;
     QueueHandle_t sAppEventQueue;
