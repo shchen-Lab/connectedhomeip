@@ -48,6 +48,8 @@
 #include <plat.h>
 
 #include "AppTask.h"
+#include "LightCommandObserver.h"
+#include "LightUartBridge.h"
 
 #if CHIP_DEVICE_LAYER_TARGET_BFLB
 #ifdef BOOT_PIN_RESET
@@ -180,6 +182,20 @@ void AppTask::AppTaskMain(void * pvParameter)
     if (ret != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "PlatformMgr().StartEventLoopTask() failed");
+        appError(ret);
+    }
+
+    ret = InitLightCommandObserver();
+    if (ret != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "InitLightCommandObserver() failed");
+        appError(ret);
+    }
+
+    ret = InitLightUartBridge();
+    if (ret != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "InitLightUartBridge() failed");
         appError(ret);
     }
 

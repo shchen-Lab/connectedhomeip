@@ -346,6 +346,11 @@ endif()
 
 target_sources(app PRIVATE
   ${EXAMPLE_DIR}/common/AppTask.cpp
+  ${EXAMPLE_DIR}/common/LightCommandObserver.cpp
+  ${EXAMPLE_DIR}/common/LightIdentifyCommandForwarder.cpp
+  ${EXAMPLE_DIR}/common/LightUartCommandEncoder.cpp
+  ${EXAMPLE_DIR}/common/LightUartBridge.cpp
+  ${EXAMPLE_DIR}/common/LightUartProtocol.c
   ${EXAMPLE_DIR}/common/ZclCallbacks.cpp
   ${EXAMPLES_PLAT_DIR}/common/bouffalo_sdk/demo_pwm.c
   ${EXAMPLES_PLAT_DIR}/common/bouffalo_sdk/platform_port.cpp

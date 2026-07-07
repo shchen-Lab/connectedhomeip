@@ -17,6 +17,7 @@
 #include <app/clusters/identify-server/IdentifyCluster.h>
 
 #include <app/InteractionModelEngine.h>
+#include <app/clusters/identify-server/IdentifyCommandObserver.h>
 #include <app/server-cluster/AttributeListBuilder.h>
 #include <clusters/Identify/Commands.h>
 #include <clusters/Identify/Metadata.h>
@@ -41,6 +42,14 @@ constexpr DataModel::AcceptedCommandEntry kAcceptedCommandsWithTriggerEffect[] =
 };
 
 } // namespace
+
+void __attribute__((weak)) MatterIdentifyCommandReceivedCallback(EndpointId,
+                                                                 const Identify::Commands::Identify::DecodableType &)
+{}
+
+void __attribute__((weak))
+MatterIdentifyTriggerEffectCommandReceivedCallback(EndpointId, const Identify::Commands::TriggerEffect::DecodableType &)
+{}
 
 IdentifyCluster::IdentifyCluster(const Config & config) :
     DefaultServerCluster({ config.endpointId, Identify::Id }), mIdentifyTime(0), mIdentifyType(config.identifyType),
@@ -152,6 +161,7 @@ IdentifyCluster::InvokeCommand(const DataModel::InvokeRequest & request, TLV::TL
     case Identify::Commands::Identify::Id: {
         Identify::Commands::Identify::DecodableType data;
         ReturnErrorOnFailure(data.Decode(input_arguments));
+        MatterIdentifyCommandReceivedCallback(request.path.mEndpointId, data);
         MATTER_TRACE_SCOPE("IdentifyCommand", "Identify");
         return NotifyAttributeChangedIfSuccess(Attributes::IdentifyTime::Id,
                                                SetIdentifyTime(IdentifyTimeChangeSource::kClient, data.identifyTime));
@@ -159,6 +169,7 @@ IdentifyCluster::InvokeCommand(const DataModel::InvokeRequest & request, TLV::TL
     case Identify::Commands::TriggerEffect::Id: {
         Identify::Commands::TriggerEffect::DecodableType data;
         ReturnErrorOnFailure(data.Decode(input_arguments));
+        MatterIdentifyTriggerEffectCommandReceivedCallback(request.path.mEndpointId, data);
         MATTER_TRACE_SCOPE("TriggerEffect", "Identify");
         mEffectIdentifier = data.effectIdentifier;
         mEffectVariant    = data.effectVariant;
