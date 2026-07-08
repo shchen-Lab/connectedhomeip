@@ -50,26 +50,8 @@ typedef enum
 {
     LU_FLAG_RESPONSE_TO_READ = 1u << 1,
     LU_FLAG_ERROR            = 1u << 2,
+    LU_FLAG_NULL_VALUE       = 1u << 3,
 } lu_flags_t;
-
-typedef enum
-{
-    LU_VT_BOOL     = 0x01,
-    LU_VT_U8       = 0x02,
-    LU_VT_U16      = 0x03,
-    LU_VT_U32      = 0x04,
-    LU_VT_I8       = 0x05,
-    LU_VT_I16      = 0x06,
-    LU_VT_ENUM8    = 0x10,
-    LU_VT_BITMAP8  = 0x20,
-    LU_VT_BITMAP16 = 0x21,
-    LU_VT_BITMAP32 = 0x22,
-} lu_value_type_t;
-
-typedef enum
-{
-    LU_VALUE_FLAG_NULL = 1u << 0,
-} lu_value_flags_t;
 
 typedef enum
 {
@@ -101,34 +83,14 @@ typedef struct
     uint8_t * buf;
     size_t cap;
     size_t len;
-    uint8_t count;
-} lu_field_writer_t;
+} lu_payload_writer_t;
 
 typedef struct
 {
     const uint8_t * buf;
     size_t len;
     size_t offset;
-    uint8_t count;
-    uint8_t index;
-} lu_field_reader_t;
-
-typedef struct
-{
-    uint8_t field_id;
-    uint8_t value_type;
-    uint8_t value_flags;
-    const uint8_t * value;
-    uint16_t value_len;
-} lu_field_t;
-
-typedef struct
-{
-    uint8_t value_type;
-    uint8_t value_flags;
-    const uint8_t * value;
-    uint16_t value_len;
-} lu_attr_value_t;
+} lu_payload_reader_t;
 
 uint16_t lu_crc16_ccitt_false(const uint8_t * data, size_t len);
 
@@ -137,36 +99,19 @@ lu_status_t lu_pack_frame(uint8_t type, uint8_t flags, uint16_t seq, uint16_t en
 
 lu_status_t lu_unpack_frame(const uint8_t * frame, size_t frame_len, lu_frame_t * out);
 
-void lu_field_writer_init(lu_field_writer_t * writer, uint8_t * buf, size_t cap);
-lu_status_t lu_field_add_raw(lu_field_writer_t * writer, uint8_t field_id, uint8_t value_type, uint8_t value_flags,
-                             const uint8_t * value, uint16_t value_len);
-lu_status_t lu_field_add_null(lu_field_writer_t * writer, uint8_t field_id, uint8_t value_type);
-lu_status_t lu_field_add_bool(lu_field_writer_t * writer, uint8_t field_id, bool value);
-lu_status_t lu_field_add_u8(lu_field_writer_t * writer, uint8_t field_id, uint8_t value);
-lu_status_t lu_field_add_u16(lu_field_writer_t * writer, uint8_t field_id, uint16_t value);
-lu_status_t lu_field_add_u32(lu_field_writer_t * writer, uint8_t field_id, uint32_t value);
-lu_status_t lu_field_add_i8(lu_field_writer_t * writer, uint8_t field_id, int8_t value);
-lu_status_t lu_field_add_i16(lu_field_writer_t * writer, uint8_t field_id, int16_t value);
-lu_status_t lu_field_add_enum8(lu_field_writer_t * writer, uint8_t field_id, uint8_t value);
-lu_status_t lu_field_add_bitmap8(lu_field_writer_t * writer, uint8_t field_id, uint8_t value);
-lu_status_t lu_field_add_bitmap16(lu_field_writer_t * writer, uint8_t field_id, uint16_t value);
-lu_status_t lu_field_add_bitmap32(lu_field_writer_t * writer, uint8_t field_id, uint32_t value);
+void lu_payload_writer_init(lu_payload_writer_t * writer, uint8_t * buf, size_t cap);
+lu_status_t lu_payload_add_u8(lu_payload_writer_t * writer, uint8_t value);
+lu_status_t lu_payload_add_u16(lu_payload_writer_t * writer, uint16_t value);
+lu_status_t lu_payload_add_u32(lu_payload_writer_t * writer, uint32_t value);
+lu_status_t lu_payload_add_i16(lu_payload_writer_t * writer, int16_t value);
 
-lu_status_t lu_field_reader_init(lu_field_reader_t * reader, const uint8_t * payload, size_t payload_len);
-lu_status_t lu_field_next(lu_field_reader_t * reader, lu_field_t * field);
-bool lu_field_reader_done(const lu_field_reader_t * reader);
+void lu_payload_reader_init(lu_payload_reader_t * reader, const uint8_t * payload, size_t payload_len);
+bool lu_payload_get_u8(lu_payload_reader_t * reader, uint8_t * out);
+bool lu_payload_get_u16(lu_payload_reader_t * reader, uint16_t * out);
+bool lu_payload_get_u32(lu_payload_reader_t * reader, uint32_t * out);
+bool lu_payload_get_i16(lu_payload_reader_t * reader, int16_t * out);
+bool lu_payload_reader_done(const lu_payload_reader_t * reader);
 
-lu_status_t lu_pack_attr_bool(bool value, uint8_t * out, size_t out_cap, size_t * out_len);
-lu_status_t lu_pack_attr_u8(uint8_t value_type, uint8_t value, uint8_t * out, size_t out_cap, size_t * out_len);
-lu_status_t lu_pack_attr_u16(uint8_t value_type, uint16_t value, uint8_t * out, size_t out_cap, size_t * out_len);
-lu_status_t lu_pack_attr_null(uint8_t value_type, uint8_t * out, size_t out_cap, size_t * out_len);
-lu_status_t lu_unpack_attr(const uint8_t * payload, size_t payload_len, lu_attr_value_t * out);
-
-bool lu_field_get_u8(const lu_field_t * field, uint8_t expected_type, uint8_t * out);
-bool lu_field_get_u16(const lu_field_t * field, uint8_t expected_type, uint16_t * out);
-bool lu_attr_get_bool(const lu_attr_value_t * attr, bool * out);
-bool lu_attr_get_u8(const lu_attr_value_t * attr, uint8_t expected_type, uint8_t * out);
-bool lu_attr_get_u16(const lu_attr_value_t * attr, uint8_t expected_type, uint16_t * out);
 
 #ifdef __cplusplus
 }

@@ -144,6 +144,10 @@ void ObserveLevelControlCommands(CommandHandlerInterface::HandlerContext & conte
         });
     ObserveCommand<StopWithOnOff::DecodableType>(context, "LevelControl.StopWithOnOff",
                                                  [](const StopWithOnOff::DecodableType &) {});
+    ObserveCommand<MoveToClosestFrequency::DecodableType>(
+        context, "LevelControl.MoveToClosestFrequency", [](const MoveToClosestFrequency::DecodableType & command) {
+            ChipLogProgress(Zcl, "  frequency=%u", static_cast<unsigned>(command.frequency));
+        });
 }
 
 void ObserveColorControlCommands(CommandHandlerInterface::HandlerContext & context)

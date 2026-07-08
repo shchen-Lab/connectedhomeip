@@ -61,25 +61,17 @@ public:
         APP_EVENT_NONE = 0x00000000,
 
         APP_EVENT_TIMER         = 0x00000010,
-        APP_EVENT_BTN_SHORT     = 0x00000020,
         APP_EVENT_FACTORY_RESET = 0x00000040,
-        APP_EVENT_BTN_LONG      = 0x00000080,
         APP_EVENT_BTN_ISR       = 0x00000100,
         APP_EVENT_RESET_CNT     = 0x00000200,
-
-        APP_EVENT_LIGHTING_ONOFF      = 0x00010000,
-        APP_EVENT_LIGHTING_LEVEL      = 0x00020000,
-        APP_EVENT_LIGHTING_COLOR      = 0x00040000,
-        APP_EVENT_LIGHTING_MASK       = APP_EVENT_LIGHTING_ONOFF | APP_EVENT_LIGHTING_LEVEL | APP_EVENT_LIGHTING_COLOR,
-        APP_EVENT_COMMISSION_COMPLETE = APP_EVENT_LIGHTING_MASK,
 
         APP_EVENT_IDENTIFY_START    = 0x01000000,
         APP_EVENT_IDENTIFY_IDENTIFY = 0x02000000,
         APP_EVENT_IDENTIFY_STOP     = 0x04000000,
         APP_EVENT_IDENTIFY_MASK     = APP_EVENT_IDENTIFY_START | APP_EVENT_IDENTIFY_IDENTIFY | APP_EVENT_IDENTIFY_STOP,
 
-        APP_EVENT_ALL_MASK = APP_EVENT_LIGHTING_MASK | APP_EVENT_TIMER | APP_EVENT_BTN_SHORT | APP_EVENT_BTN_LONG |
-            APP_EVENT_BTN_ISR | APP_EVENT_RESET_CNT | APP_EVENT_IDENTIFY_MASK,
+        APP_EVENT_ALL_MASK = APP_EVENT_TIMER | APP_EVENT_FACTORY_RESET | APP_EVENT_BTN_ISR | APP_EVENT_RESET_CNT |
+            APP_EVENT_IDENTIFY_MASK,
     };
 
     void SetEndpointId(EndpointId endpointId)
@@ -104,12 +96,6 @@ private:
     friend PlatformManagerImpl;
 
     static uint32_t AppRebootCheck(uint32_t time = 0);
-
-    static void LightingSetBleAdv(void);
-    static void LightingSetProvisioned(void);
-    static void LightingSetFactoryReset(void);
-
-    static void LightingUpdate(app_event_t event = APP_EVENT_NONE);
 
     static bool StartTimer(void);
     static void CancelTimer(void);

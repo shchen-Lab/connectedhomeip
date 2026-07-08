@@ -40,19 +40,16 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
 
     if (clusterId == OnOff::Id && attributeId == OnOff::Attributes::OnOff::Id)
     {
-        GetAppTask().PostEvent(AppTask::APP_EVENT_LIGHTING_ONOFF);
         ChipLogProgress(Zcl, "OnOff attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u", ChipLogValueMEI(attributeId),
                         type, *value, size);
     }
     else if (clusterId == LevelControl::Id)
     {
-        GetAppTask().PostEvent(AppTask::APP_EVENT_LIGHTING_LEVEL);
         ChipLogProgress(Zcl, "Level Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                         ChipLogValueMEI(attributeId), type, *value, size);
     }
     else if (clusterId == ColorControl::Id)
     {
-        GetAppTask().PostEvent(AppTask::APP_EVENT_LIGHTING_COLOR);
         ChipLogProgress(Zcl, "Color Control attribute ID: " ChipLogFormatMEI " Type: %u Value: %u, length %u",
                         ChipLogValueMEI(attributeId), type, *value, size);
     }
