@@ -197,7 +197,10 @@ target_compile_options(app PRIVATE
 )
 
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/gen/app-zapgen/zapgen/app-templates/zap-generated")
-set(_ZAP_FILE ${CHIP_ROOT}/examples/bridge-app/bridge-common/bridge-app.zap)
+# The runtime bridge ZAP only contains fixed endpoints (root + aggregator). Use
+# the codegen ZAP here so dynamic lighting endpoints still get generated command
+# dispatch and cluster support. The placeholder endpoint is disabled at runtime.
+set(_ZAP_FILE ${CHIP_ROOT}/examples/bridge-app/bridge-common/bridge-app-codegen.zap)
 chip_configure_data_model(app
   INCLUDE_SERVER
   ZAP_FILE ${_ZAP_FILE}
@@ -221,11 +224,6 @@ target_sources(app PRIVATE
   ${EXAMPLE_DIR}/common/AppTask.cpp
   ${EXAMPLE_DIR}/common/BridgeApp.cpp
   ${CHIP_ROOT}/examples/bridge-app/bridge-common/src/bridged-actions-stub.cpp
-  ${CHIP_ROOT}/src/app/clusters/ota-requestor/BDXDownloader.cpp
-  ${CHIP_ROOT}/src/app/clusters/ota-requestor/DefaultOTARequestor.cpp
-  ${CHIP_ROOT}/src/app/clusters/ota-requestor/DefaultOTARequestorDriver.cpp
-  ${CHIP_ROOT}/src/app/clusters/ota-requestor/DefaultOTARequestorStorage.cpp
-  ${CHIP_ROOT}/src/app/clusters/ota-requestor/ota-requestor-server.cpp
   ${EXAMPLES_PLAT_DIR}/common/bouffalo_sdk/platform_port.cpp
   ${EXAMPLES_PLAT_DIR}/common/plat/OTAConfig.cpp
   ${EXAMPLES_PLAT_DIR}/common/plat/platform.cpp
