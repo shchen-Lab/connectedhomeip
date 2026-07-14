@@ -45,7 +45,7 @@ namespace {
 #endif
 
 #ifndef LIGHT_UART_BAUDRATE
-#define LIGHT_UART_BAUDRATE 2000000
+#define LIGHT_UART_BAUDRATE 921600
 #endif
 
 #ifndef LIGHT_UART_DMA_RX_DEVICE_NAME
