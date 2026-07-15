@@ -249,8 +249,7 @@ void ObserveColorControlCommands(CommandHandlerInterface::HandlerContext & conte
 class LightCommandObserver : public CommandHandlerInterface
 {
 public:
-    LightCommandObserver(EndpointId endpointId, ClusterId clusterId) : CommandHandlerInterface(Optional<EndpointId>(endpointId), clusterId)
-    {}
+    explicit LightCommandObserver(ClusterId clusterId) : CommandHandlerInterface(NullOptional, clusterId) {}
 
     void InvokeCommand(HandlerContext & context) override
     {
@@ -271,9 +270,9 @@ public:
     }
 };
 
-LightCommandObserver sOnOffObserver(APP_LIGHT_ENDPOINT_ID, OnOff::Id);
-LightCommandObserver sLevelControlObserver(APP_LIGHT_ENDPOINT_ID, LevelControl::Id);
-LightCommandObserver sColorControlObserver(APP_LIGHT_ENDPOINT_ID, ColorControl::Id);
+LightCommandObserver sOnOffObserver(OnOff::Id);
+LightCommandObserver sLevelControlObserver(LevelControl::Id);
+LightCommandObserver sColorControlObserver(ColorControl::Id);
 bool sRegistered = false;
 
 } // namespace

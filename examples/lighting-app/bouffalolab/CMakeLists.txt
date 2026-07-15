@@ -316,7 +316,7 @@ target_compile_options(app PRIVATE
 # =============================================================================
 
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/gen/app-zapgen/zapgen/app-templates/zap-generated")
-set(_ZAP_FILE ${CHIP_ROOT}/examples/lighting-app/lighting-common/lighting-app.zap)
+set(_ZAP_FILE ${CHIP_ROOT}/examples/lighting-app/bouffalolab/data_model/lighting-app-wifi.zap)
 chip_configure_data_model(app
   INCLUDE_SERVER
   ZAP_FILE ${_ZAP_FILE}

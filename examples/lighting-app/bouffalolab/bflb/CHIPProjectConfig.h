@@ -113,4 +113,6 @@
 
 #define CHIP_DEVICE_CONFIG_ENABLE_EXTENDED_DISCOVERY 1
 
-#define CHIP_BLE_DEVICE_NAME "MatterLight"
+#define CHIP_BLE_DEVICE_NAME "LightingBridge"
+
+#define CHIP_DEVICE_CONFIG_DEVICE_NAME "LightingBridge"
