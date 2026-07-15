@@ -223,6 +223,8 @@ endif()
 target_sources(app PRIVATE
   ${EXAMPLE_DIR}/common/AppTask.cpp
   ${EXAMPLE_DIR}/common/BridgeApp.cpp
+  ${EXAMPLE_DIR}/common/BridgeAttributeAccess.cpp
+  ${EXAMPLE_DIR}/common/BridgeDevice.cpp
   ${CHIP_ROOT}/examples/bridge-app/bridge-common/src/bridged-actions-stub.cpp
   ${EXAMPLES_PLAT_DIR}/common/bouffalo_sdk/platform_port.cpp
   ${EXAMPLES_PLAT_DIR}/common/plat/OTAConfig.cpp

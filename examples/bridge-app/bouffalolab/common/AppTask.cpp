@@ -49,6 +49,14 @@ using namespace ::chip::DeviceLayer;
 using namespace chip::Shell;
 #endif
 
+#ifdef BOOT_PIN_RESET
+namespace {
+
+constexpr DynamicBridgeDeviceType kButtonDeviceType = DynamicBridgeDeviceType::kExtendedColorLight;
+
+} // namespace
+#endif
+
 AppTask AppTask::sAppTask;
 StackType_t AppTask::appStack[APP_TASK_STACK_SIZE / sizeof(StackType_t)];
 StaticTask_t AppTask::appTaskStruct;
@@ -56,8 +64,8 @@ StaticTask_t AppTask::appTaskStruct;
 void StartAppTask(void)
 {
     GetAppTask().sAppTaskHandle =
-        xTaskCreateStatic(GetAppTask().AppTaskMain, "bridge_app", MATTER_ARRAY_SIZE(GetAppTask().appStack), nullptr,
-                          2, GetAppTask().appStack, &GetAppTask().appTaskStruct);
+        xTaskCreateStatic(GetAppTask().AppTaskMain, "bridge_app", MATTER_ARRAY_SIZE(GetAppTask().appStack), nullptr, 2,
+                          GetAppTask().appStack, &GetAppTask().appTaskStruct);
     if (GetAppTask().sAppTaskHandle == nullptr)
     {
         ChipLogError(NotSpecified, "Failed to create app task");
@@ -205,6 +213,21 @@ void AppTask::TimerEventHandler(app_event_t event)
             if (pressedTime >= APP_BUTTON_PRESS_LONG)
             {
                 GetAppTask().PostEvent(APP_EVENT_FACTORY_RESET);
+            }
+            else
+            {
+                const bool removeDevice = IsDynamicBridgeDeviceAddedLocked();
+                const CHIP_ERROR err =
+                    removeDevice ? RemoveDynamicBridgeDeviceLocked() : AddDynamicBridgeDeviceLocked(kButtonDeviceType);
+                if (err == CHIP_NO_ERROR)
+                {
+                    ChipLogProgress(NotSpecified, "Dynamic bridge device %s", removeDevice ? "removed" : "added");
+                }
+                else
+                {
+                    ChipLogError(NotSpecified, "Failed to %s dynamic bridge device: %" CHIP_ERROR_FORMAT,
+                                 removeDevice ? "remove" : "add", err.Format());
+                }
             }
             GetAppTask().mButtonPressedTime = 0;
         }

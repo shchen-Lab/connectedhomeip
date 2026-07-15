@@ -18,21 +18,8 @@
 
 #pragma once
 
-#include <lib/core/CHIPError.h>
+#include <lib/core/DataModelTypes.h>
 
-#include <cstdint>
+class BridgeDevice;
 
-enum class DynamicBridgeDeviceType : uint8_t
-{
-    kOnOffLight,
-    kDimmableLight,
-    kColorTemperatureLight,
-    kExtendedColorLight,
-};
-
-CHIP_ERROR InitBridgeApp();
-
-// These APIs synchronously update Matter's dynamic endpoint table. The caller must hold the CHIP stack lock.
-bool IsDynamicBridgeDeviceAddedLocked();
-CHIP_ERROR AddDynamicBridgeDeviceLocked(DynamicBridgeDeviceType type);
-CHIP_ERROR RemoveDynamicBridgeDeviceLocked();
+BridgeDevice * FindBridgeDevice(chip::EndpointId endpoint);
