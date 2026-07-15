@@ -247,7 +247,13 @@ void ScheduleReportingCallback(BridgeDevice * device, ClusterId cluster, Attribu
 {
     auto * path = Platform::New<ConcreteAttributePath>(device->GetEndpointId(), cluster, attribute);
     VerifyOrReturn(path != nullptr, ChipLogError(DeviceLayer, "Failed to allocate reporting path"));
-    PlatformMgr().ScheduleWork(CallReportingCallback, reinterpret_cast<intptr_t>(path));
+
+    CHIP_ERROR err = PlatformMgr().ScheduleWork(CallReportingCallback, reinterpret_cast<intptr_t>(path));
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "Failed to schedule attribute reporting: %" CHIP_ERROR_FORMAT, err.Format());
+        Platform::Delete(path);
+    }
 }
 
 void HandleDeviceStatusChanged(BridgeDevice * device, BridgeDevice::Changed_t itemChangedMask)

@@ -18,6 +18,7 @@
 
 #include "AppTask.h"
 #include "BridgeApp.h"
+#include "BridgeUart.h"
 
 #include <platform/bouffalolab/common/DiagnosticDataProviderImpl.h>
 #include <system/SystemClock.h>
@@ -140,13 +141,24 @@ void AppTask::AppTaskMain(void * pvParameter)
 
     vTaskSuspend(nullptr);
 
+    CHIP_ERROR uartErr = CHIP_NO_ERROR;
     PlatformMgr().LockChipStack();
     err = InitBridgeApp();
+    if (err == CHIP_NO_ERROR)
+    {
+        uartErr = InitBridgeUart();
+    }
     PlatformMgr().UnlockChipStack();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "InitBridgeApp() failed: %" CHIP_ERROR_FORMAT, err.Format());
         appError(err);
+    }
+
+    if (uartErr != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "InitBridgeUart() failed: %" CHIP_ERROR_FORMAT, uartErr.Format());
+        appError(uartErr);
     }
 
     uint64_t currentHeapFree = 0;
