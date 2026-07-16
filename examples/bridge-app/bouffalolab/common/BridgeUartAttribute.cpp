@@ -77,6 +77,7 @@ CHIP_ERROR ApplyColorAttributeValue(const PendingAttributeReport & report, Bridg
 
     switch (report.attributeId)
     {
+    // Hue/Saturation reports select HS mode; the setter updates ColorMode and EnhancedColorMode.
     case ColorControl::Attributes::CurrentHue::Id:
         VerifyOrReturnError(device.HasHueSaturation() && GetU8(report, u8Value), CHIP_ERROR_INVALID_ARGUMENT);
         device.SetHue(u8Value);
@@ -93,6 +94,7 @@ CHIP_ERROR ApplyColorAttributeValue(const PendingAttributeReport & report, Bridg
         VerifyOrReturnError(device.HasXY() && GetU16(report, u16Value), CHIP_ERROR_INVALID_ARGUMENT);
         device.SetCurrentY(u16Value);
         return CHIP_NO_ERROR;
+    // Color temperature reports select Color Temperature mode.
     case ColorControl::Attributes::ColorTemperatureMireds::Id:
         VerifyOrReturnError(device.HasColorTemperature() && GetU16(report, u16Value), CHIP_ERROR_INVALID_ARGUMENT);
         device.SetColorTemperatureMireds(u16Value);

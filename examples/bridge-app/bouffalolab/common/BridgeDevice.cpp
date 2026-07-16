@@ -34,8 +34,8 @@ BridgeDevice::BridgeDevice(const char * name, const char * location, const char 
     Platform::CopyString(mUniqueId, sizeof(mUniqueId), uniqueId);
     if (!HasHueSaturation() && !HasXY() && HasColorTemperature())
     {
-        mColorMode         = 2;
-        mEnhancedColorMode = 2;
+        mColorMode         = kColorModeColorTemperature;
+        mEnhancedColorMode = kColorModeColorTemperature;
     }
 }
 
@@ -44,7 +44,7 @@ void BridgeDevice::SetOnOff(bool on)
     const bool changed = (mOn != on);
     mOn                = on;
     ChipLogProgress(DeviceLayer, "BridgeDevice[%s]: %s", mName, mOn ? "ON" : "OFF");
-    NotifyIfChanged(changed, kChanged_State);
+    NotifyIfChanged(changed, kChanged_OnOffState);
 }
 
 void BridgeDevice::SetReachable(bool reachable)
@@ -74,10 +74,10 @@ void BridgeDevice::SetOnLevel(uint8_t level)
 void BridgeDevice::SetHue(uint8_t hue)
 {
     VerifyOrReturn(HasHueSaturation());
-    const bool changed = (mHue != hue || mColorMode != 0 || mEnhancedColorMode != 0);
+    const bool changed = (mHue != hue || mColorMode != kColorModeHueSaturation || mEnhancedColorMode != kColorModeHueSaturation);
     mHue               = hue;
-    mColorMode         = 0;
-    mEnhancedColorMode = 0;
+    mColorMode         = kColorModeHueSaturation;
+    mEnhancedColorMode = kColorModeHueSaturation;
     ChipLogProgress(DeviceLayer, "BridgeDevice[%s]: hue %u", mName, mHue);
     NotifyIfChanged(changed, kChanged_Color);
 }
@@ -85,10 +85,10 @@ void BridgeDevice::SetHue(uint8_t hue)
 void BridgeDevice::SetSaturation(uint8_t saturation)
 {
     VerifyOrReturn(HasHueSaturation());
-    const bool changed = (mSaturation != saturation || mColorMode != 0 || mEnhancedColorMode != 0);
+    const bool changed = (mSaturation != saturation || mColorMode != kColorModeHueSaturation || mEnhancedColorMode != kColorModeHueSaturation);
     mSaturation        = saturation;
-    mColorMode         = 0;
-    mEnhancedColorMode = 0;
+    mColorMode         = kColorModeHueSaturation;
+    mEnhancedColorMode = kColorModeHueSaturation;
     ChipLogProgress(DeviceLayer, "BridgeDevice[%s]: saturation %u", mName, mSaturation);
     NotifyIfChanged(changed, kChanged_Color);
 }
@@ -96,10 +96,10 @@ void BridgeDevice::SetSaturation(uint8_t saturation)
 void BridgeDevice::SetCurrentX(uint16_t currentX)
 {
     VerifyOrReturn(HasXY());
-    const bool changed = (mCurrentX != currentX || mColorMode != 1 || mEnhancedColorMode != 1);
+    const bool changed = (mCurrentX != currentX || mColorMode != kColorModeCurrentXy || mEnhancedColorMode != kColorModeCurrentXy);
     mCurrentX          = currentX;
-    mColorMode         = 1;
-    mEnhancedColorMode = 1;
+    mColorMode         = kColorModeCurrentXy;
+    mEnhancedColorMode = kColorModeCurrentXy;
     ChipLogProgress(DeviceLayer, "BridgeDevice[%s]: current X %u", mName, mCurrentX);
     NotifyIfChanged(changed, kChanged_Color);
 }
@@ -107,10 +107,10 @@ void BridgeDevice::SetCurrentX(uint16_t currentX)
 void BridgeDevice::SetCurrentY(uint16_t currentY)
 {
     VerifyOrReturn(HasXY());
-    const bool changed = (mCurrentY != currentY || mColorMode != 1 || mEnhancedColorMode != 1);
+    const bool changed = (mCurrentY != currentY || mColorMode != kColorModeCurrentXy || mEnhancedColorMode != kColorModeCurrentXy);
     mCurrentY          = currentY;
-    mColorMode         = 1;
-    mEnhancedColorMode = 1;
+    mColorMode         = kColorModeCurrentXy;
+    mEnhancedColorMode = kColorModeCurrentXy;
     ChipLogProgress(DeviceLayer, "BridgeDevice[%s]: current Y %u", mName, mCurrentY);
     NotifyIfChanged(changed, kChanged_Color);
 }
@@ -118,10 +118,10 @@ void BridgeDevice::SetCurrentY(uint16_t currentY)
 void BridgeDevice::SetColorTemperatureMireds(uint16_t temperatureMireds)
 {
     VerifyOrReturn(HasColorTemperature());
-    const bool changed      = (mColorTemperatureMireds != temperatureMireds || mColorMode != 2 || mEnhancedColorMode != 2);
+    const bool changed      = (mColorTemperatureMireds != temperatureMireds || mColorMode != kColorModeColorTemperature || mEnhancedColorMode != kColorModeColorTemperature);
     mColorTemperatureMireds = temperatureMireds;
-    mColorMode              = 2;
-    mEnhancedColorMode      = 2;
+    mColorMode              = kColorModeColorTemperature;
+    mEnhancedColorMode      = kColorModeColorTemperature;
     ChipLogProgress(DeviceLayer, "BridgeDevice[%s]: color temperature %u mireds", mName, mColorTemperatureMireds);
     NotifyIfChanged(changed, kChanged_Color);
 }

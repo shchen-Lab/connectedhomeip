@@ -37,10 +37,14 @@ public:
     static constexpr uint32_t kExtendedColorFeatureMap =
         kColorFeatureHueSaturation | kColorFeatureXY | kColorFeatureColorTemperature;
 
+    static constexpr uint8_t kColorModeHueSaturation    = 0;
+    static constexpr uint8_t kColorModeCurrentXy       = 1;
+    static constexpr uint8_t kColorModeColorTemperature = 2;
+
     enum Changed_t
     {
         kChanged_Reachable = 0x01,
-        kChanged_State     = 0x02,
+        kChanged_OnOffState = 0x02,
         kChanged_Location  = 0x04,
         kChanged_Name      = 0x08,
         kChanged_Level     = 0x10,

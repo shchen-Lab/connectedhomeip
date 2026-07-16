@@ -264,7 +264,7 @@ void HandleDeviceStatusChanged(BridgeDevice * device, BridgeDevice::Changed_t it
                                   BridgedDeviceBasicInformation::Attributes::Reachable::Id);
     }
 
-    if (itemChangedMask & BridgeDevice::kChanged_State)
+    if (itemChangedMask & BridgeDevice::kChanged_OnOffState)
     {
         ScheduleReportingCallback(device, OnOff::Id, OnOff::Attributes::OnOff::Id);
     }
