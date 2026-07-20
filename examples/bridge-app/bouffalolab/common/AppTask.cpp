@@ -53,7 +53,93 @@ using namespace chip::Shell;
 #ifdef BOOT_PIN_RESET
 namespace {
 
-constexpr DynamicBridgeDeviceType kButtonDeviceType = DynamicBridgeDeviceType::kExtendedColorLight;
+constexpr DynamicBridgeDeviceParams kButtonColorTemperatureDevice = { DynamicBridgeDeviceType::kColorTemperatureLight,
+                                                                      "Color Temperature Light 1", "Bedroom", "bridge-ct-1" };
+constexpr DynamicBridgeDeviceParams kButtonHueSaturationDevice    = { DynamicBridgeDeviceType::kHueSaturationLight, "HS Light 1",
+                                                                      "Living Room", "bridge-hs-1" };
+constexpr DynamicBridgeDeviceParams kButtonOnOffDevice1 = { DynamicBridgeDeviceType::kOnOffLight, "OnOff Light 1", "Living Room",
+                                                            "bridge-onoff-1" };
+constexpr DynamicBridgeDeviceParams kButtonOnOffDevice2 = { DynamicBridgeDeviceType::kOnOffLight, "OnOff Light 2", "Living Room",
+                                                            "bridge-onoff-2" };
+
+EndpointId gButtonColorTemperatureEndpoint = kInvalidEndpointId;
+EndpointId gButtonHueSaturationEndpoint    = kInvalidEndpointId;
+EndpointId gButtonOnOffEndpoint1           = kInvalidEndpointId;
+EndpointId gButtonOnOffEndpoint2           = kInvalidEndpointId;
+
+bool AreButtonBridgeDevicesAdded()
+{
+    return gButtonColorTemperatureEndpoint != kInvalidEndpointId || gButtonHueSaturationEndpoint != kInvalidEndpointId ||
+        gButtonOnOffEndpoint1 != kInvalidEndpointId || gButtonOnOffEndpoint2 != kInvalidEndpointId;
+}
+
+CHIP_ERROR RemoveButtonBridgeDevicesLocked();
+
+CHIP_ERROR AddButtonBridgeDevicesLocked()
+{
+    if (AreButtonBridgeDevicesAdded())
+    {
+        return CHIP_ERROR_INCORRECT_STATE;
+    }
+
+    CHIP_ERROR err = AddDynamicBridgeDeviceLocked(kButtonColorTemperatureDevice, gButtonColorTemperatureEndpoint);
+    if (err != CHIP_NO_ERROR)
+    {
+        return err;
+    }
+
+    err = AddDynamicBridgeDeviceLocked(kButtonHueSaturationDevice, gButtonHueSaturationEndpoint);
+    if (err != CHIP_NO_ERROR)
+    {
+        CHIP_ERROR rollbackError = RemoveButtonBridgeDevicesLocked();
+        return rollbackError == CHIP_NO_ERROR ? err : rollbackError;
+    }
+
+    err = AddDynamicBridgeDeviceLocked(kButtonOnOffDevice1, gButtonOnOffEndpoint1);
+    if (err != CHIP_NO_ERROR)
+    {
+        CHIP_ERROR rollbackError = RemoveButtonBridgeDevicesLocked();
+        return rollbackError == CHIP_NO_ERROR ? err : rollbackError;
+    }
+
+    err = AddDynamicBridgeDeviceLocked(kButtonOnOffDevice2, gButtonOnOffEndpoint2);
+    if (err != CHIP_NO_ERROR)
+    {
+        CHIP_ERROR rollbackError = RemoveButtonBridgeDevicesLocked();
+        return rollbackError == CHIP_NO_ERROR ? err : rollbackError;
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR RemoveButtonBridgeDevicesLocked()
+{
+    CHIP_ERROR result = CHIP_NO_ERROR;
+
+    auto removeDevice = [&result](EndpointId & endpoint) {
+        if (endpoint == kInvalidEndpointId)
+        {
+            return;
+        }
+
+        CHIP_ERROR err = RemoveDynamicBridgeDeviceLocked(endpoint);
+        if (err == CHIP_NO_ERROR || err == CHIP_ERROR_NOT_FOUND)
+        {
+            endpoint = kInvalidEndpointId;
+        }
+        else if (result == CHIP_NO_ERROR)
+        {
+            result = err;
+        }
+    };
+
+    removeDevice(gButtonOnOffEndpoint2);
+    removeDevice(gButtonOnOffEndpoint1);
+    removeDevice(gButtonHueSaturationEndpoint);
+    removeDevice(gButtonColorTemperatureEndpoint);
+
+    return result;
+}
 
 } // namespace
 #endif
@@ -228,16 +314,15 @@ void AppTask::TimerEventHandler(app_event_t event)
             }
             else
             {
-                const bool removeDevice = IsDynamicBridgeDeviceAddedLocked();
-                const CHIP_ERROR err =
-                    removeDevice ? RemoveDynamicBridgeDeviceLocked() : AddDynamicBridgeDeviceLocked(kButtonDeviceType);
+                const bool removeDevice = AreButtonBridgeDevicesAdded();
+                CHIP_ERROR err          = removeDevice ? RemoveButtonBridgeDevicesLocked() : AddButtonBridgeDevicesLocked();
                 if (err == CHIP_NO_ERROR)
                 {
-                    ChipLogProgress(NotSpecified, "Dynamic bridge device %s", removeDevice ? "removed" : "added");
+                    ChipLogProgress(NotSpecified, "Dynamic bridge devices %s", removeDevice ? "removed" : "added");
                 }
                 else
                 {
-                    ChipLogError(NotSpecified, "Failed to %s dynamic bridge device: %" CHIP_ERROR_FORMAT,
+                    ChipLogError(NotSpecified, "Failed to %s dynamic bridge devices: %" CHIP_ERROR_FORMAT,
                                  removeDevice ? "remove" : "add", err.Format());
                 }
             }

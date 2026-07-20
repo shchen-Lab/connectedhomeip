@@ -33,6 +33,7 @@
 
 #include <cstring>
 #include <memory>
+#include <optional>
 
 using namespace ::chip;
 using namespace ::chip::app;
@@ -47,21 +48,6 @@ constexpr int kDescriptorAttributeArraySize = 254;
 
 EndpointId gCurrentEndpointId;
 EndpointId gFirstDynamicEndpointId;
-BridgeDevice * gDevices[CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT];
-
-BridgeDevice gOnOffLight("Light 1", "Office", "bridge-light-1", true, false, 0);
-BridgeDevice gDimmableLight("Dimmable Light 1", "Office", "bridge-dimmer-1", true, true, 0);
-BridgeDevice gExtendedColorLight("Extended Color Light 1", "Kitchen", "bridge-extended-color-1", true, true,
-                                 BridgeDevice::kExtendedColorFeatureMap);
-BridgeDevice gPlug("Plug 1", "Den", "bridge-plug-1", false, false, 0);
-
-BridgeDevice gDynamicOnOffLight("On/Off Light 2", "Office", "bridge-light-2", true, false, 0);
-BridgeDevice gDynamicDimmableLight("Dimmable Light 2", "Office", "bridge-dimmer-2", true, true, 0);
-BridgeDevice gDynamicColorTemperatureLight("Color Temperature Light 1", "Bedroom", "bridge-ct-1", true, true,
-                                           BridgeDevice::kColorFeatureColorTemperature);
-BridgeDevice gDynamicExtendedColorLight("Extended Color Light 2", "Living Room", "bridge-extended-color-2", true, true,
-                                        BridgeDevice::kExtendedColorFeatureMap);
-BridgeDevice * gDynamicDevice = nullptr;
 
 std::unique_ptr<Actions::ActionsDelegateImpl> sActionsDelegateImpl;
 std::unique_ptr<Actions::ActionsServer> sActionsServer;
@@ -113,6 +99,17 @@ DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::RemainingTime::Id, INT16U, 2
                               ZAP_ATTRIBUTE_MASK(WRITABLE) | ZAP_ATTRIBUTE_MASK(NULLABLE)),
     DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::FeatureMap::Id, BITMAP32, 4, 0), DECLARE_DYNAMIC_ATTRIBUTE_LIST_END();
 
+DECLARE_DYNAMIC_ATTRIBUTE_LIST_BEGIN(colorControlHueSaturationAttrs)
+DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::CurrentHue::Id, INT8U, 1, 0),
+    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::CurrentSaturation::Id, INT8U, 1, 0),
+    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::RemainingTime::Id, INT16U, 2, 0),
+    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::ColorMode::Id, ENUM8, 1, 0),
+    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::Options::Id, BITMAP8, 1, ZAP_ATTRIBUTE_MASK(WRITABLE)),
+    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::NumberOfPrimaries::Id, INT8U, 1, 0),
+    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::EnhancedColorMode::Id, ENUM8, 1, 0),
+    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::ColorCapabilities::Id, INT16U, 2, 0),
+    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::FeatureMap::Id, BITMAP32, 4, 0), DECLARE_DYNAMIC_ATTRIBUTE_LIST_END();
+
 DECLARE_DYNAMIC_ATTRIBUTE_LIST_BEGIN(descriptorAttrs)
 DECLARE_DYNAMIC_ATTRIBUTE(Descriptor::Attributes::DeviceTypeList::Id, ARRAY, kDescriptorAttributeArraySize, 0),
     DECLARE_DYNAMIC_ATTRIBUTE(Descriptor::Attributes::ServerList::Id, ARRAY, kDescriptorAttributeArraySize, 0),
@@ -151,6 +148,18 @@ constexpr CommandId colorControlTemperatureIncomingCommands[] = {
     ColorControl::Commands::StopMoveStep::Id,
     ColorControl::Commands::MoveColorTemperature::Id,
     ColorControl::Commands::StepColorTemperature::Id,
+    kInvalidCommandId,
+};
+
+constexpr CommandId colorControlHueSaturationIncomingCommands[] = {
+    ColorControl::Commands::MoveToHue::Id,
+    ColorControl::Commands::MoveHue::Id,
+    ColorControl::Commands::StepHue::Id,
+    ColorControl::Commands::MoveToSaturation::Id,
+    ColorControl::Commands::MoveSaturation::Id,
+    ColorControl::Commands::StepSaturation::Id,
+    ColorControl::Commands::MoveToHueAndSaturation::Id,
+    ColorControl::Commands::StopMoveStep::Id,
     kInvalidCommandId,
 };
 
@@ -194,6 +203,15 @@ DECLARE_DYNAMIC_CLUSTER(OnOff::Id, onOffAttrs, ZAP_CLUSTER_MASK(SERVER), onOffIn
     DECLARE_DYNAMIC_CLUSTER(BridgedDeviceBasicInformation::Id, bridgedDeviceBasicAttrs, ZAP_CLUSTER_MASK(SERVER), nullptr,
                             nullptr) DECLARE_DYNAMIC_CLUSTER_LIST_END;
 
+DECLARE_DYNAMIC_CLUSTER_LIST_BEGIN(bridgedHueSaturationLightClusters)
+DECLARE_DYNAMIC_CLUSTER(OnOff::Id, onOffAttrs, ZAP_CLUSTER_MASK(SERVER), onOffIncomingCommands, nullptr),
+    DECLARE_DYNAMIC_CLUSTER(LevelControl::Id, levelControlAttrs, ZAP_CLUSTER_MASK(SERVER), levelControlIncomingCommands, nullptr),
+    DECLARE_DYNAMIC_CLUSTER(ColorControl::Id, colorControlHueSaturationAttrs, ZAP_CLUSTER_MASK(SERVER),
+                            colorControlHueSaturationIncomingCommands, nullptr),
+    DECLARE_DYNAMIC_CLUSTER(Descriptor::Id, descriptorAttrs, ZAP_CLUSTER_MASK(SERVER), nullptr, nullptr),
+    DECLARE_DYNAMIC_CLUSTER(BridgedDeviceBasicInformation::Id, bridgedDeviceBasicAttrs, ZAP_CLUSTER_MASK(SERVER), nullptr,
+                            nullptr) DECLARE_DYNAMIC_CLUSTER_LIST_END;
+
 DECLARE_DYNAMIC_CLUSTER_LIST_BEGIN(bridgedExtendedColorLightClusters)
 DECLARE_DYNAMIC_CLUSTER(OnOff::Id, onOffAttrs, ZAP_CLUSTER_MASK(SERVER), onOffIncomingCommands, nullptr),
     DECLARE_DYNAMIC_CLUSTER(LevelControl::Id, levelControlAttrs, ZAP_CLUSTER_MASK(SERVER), levelControlIncomingCommands, nullptr),
@@ -205,13 +223,18 @@ DECLARE_DYNAMIC_CLUSTER(OnOff::Id, onOffAttrs, ZAP_CLUSTER_MASK(SERVER), onOffIn
 DECLARE_DYNAMIC_ENDPOINT(bridgedOnOffLightEndpoint, bridgedOnOffLightClusters);
 DECLARE_DYNAMIC_ENDPOINT(bridgedDimmableLightEndpoint, bridgedDimmableLightClusters);
 DECLARE_DYNAMIC_ENDPOINT(bridgedColorTemperatureLightEndpoint, bridgedColorTemperatureLightClusters);
+DECLARE_DYNAMIC_ENDPOINT(bridgedHueSaturationLightEndpoint, bridgedHueSaturationLightClusters);
 DECLARE_DYNAMIC_ENDPOINT(bridgedExtendedColorLightEndpoint, bridgedExtendedColorLightClusters);
 
-DataVersion gOnOffLightDataVersions[MATTER_ARRAY_SIZE(bridgedOnOffLightClusters)];
-DataVersion gDimmableLightDataVersions[MATTER_ARRAY_SIZE(bridgedDimmableLightClusters)];
-DataVersion gExtendedColorLightDataVersions[MATTER_ARRAY_SIZE(bridgedExtendedColorLightClusters)];
-DataVersion gPlugDataVersions[MATTER_ARRAY_SIZE(bridgedOnOffLightClusters)];
-DataVersion gDynamicDeviceDataVersions[MATTER_ARRAY_SIZE(bridgedExtendedColorLightClusters)];
+constexpr size_t kDynamicDeviceDataVersionCount = MATTER_ARRAY_SIZE(bridgedExtendedColorLightClusters);
+
+struct DynamicDeviceSlot
+{
+    std::optional<BridgeDevice> device;
+    DataVersion dataVersions[kDynamicDeviceDataVersionCount] = {};
+};
+
+DynamicDeviceSlot gDynamicDeviceSlots[CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT];
 
 const EmberAfDeviceType gRootDeviceTypes[]          = { { Device::kRootNodeDeviceTypeId, Device::kRootNodeDeviceTypeRevision } };
 const EmberAfDeviceType gAggregateNodeDeviceTypes[] = { { Device::kAggregatorDeviceTypeId,
@@ -225,6 +248,10 @@ const EmberAfDeviceType gBridgedDimmableDeviceTypes[] = {
 };
 const EmberAfDeviceType gBridgedColorTemperatureDeviceTypes[] = {
     { Device::kColorTemperatureLightDeviceTypeId, Device::kColorTemperatureLightDeviceTypeRevision },
+    { Device::kBridgedNodeDeviceTypeId, Device::kBridgedNodeDeviceTypeRevision }
+};
+const EmberAfDeviceType gBridgedHueSaturationDeviceTypes[] = {
+    { Device::kDimmableLightDeviceTypeId, Device::kDimmableLightDeviceTypeRevision },
     { Device::kBridgedNodeDeviceTypeId, Device::kBridgedNodeDeviceTypeRevision }
 };
 const EmberAfDeviceType gBridgedExtendedColorDeviceTypes[] = {
@@ -301,83 +328,73 @@ void HandleDeviceStatusChanged(BridgeDevice * device, BridgeDevice::Changed_t it
     }
 }
 
-int AddDeviceEndpoint(BridgeDevice * device, EmberAfEndpointType * endpointType,
-                      const Span<const EmberAfDeviceType> & deviceTypeList, const Span<DataVersion> & dataVersionStorage,
-                      EndpointId parentEndpointId)
+CHIP_ERROR AddDeviceEndpoint(uint16_t index, BridgeDevice & device, EmberAfEndpointType * endpointType,
+                             const Span<const EmberAfDeviceType> & deviceTypeList, const Span<DataVersion> & dataVersionStorage,
+                             EndpointId parentEndpointId, EndpointId & endpoint)
 {
-    for (uint8_t index = 0; index < CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT; index++)
+    while (true)
     {
-        if (gDevices[index] != nullptr)
+        device.SetEndpointId(gCurrentEndpointId);
+        CHIP_ERROR err = emberAfSetDynamicEndpoint(index, gCurrentEndpointId, endpointType, dataVersionStorage, deviceTypeList,
+                                                   parentEndpointId);
+        if (err == CHIP_NO_ERROR)
         {
-            continue;
+            endpoint = gCurrentEndpointId;
+            ChipLogProgress(DeviceLayer, "Added device %s to dynamic endpoint %u (index=%u)", device.GetName(), endpoint,
+                            static_cast<unsigned>(index));
+            return CHIP_NO_ERROR;
         }
 
-        gDevices[index] = device;
-        while (true)
+        if (err != CHIP_ERROR_ENDPOINT_EXISTS)
         {
-            device->SetEndpointId(gCurrentEndpointId);
-            CHIP_ERROR err = emberAfSetDynamicEndpoint(index, gCurrentEndpointId, endpointType, dataVersionStorage, deviceTypeList,
-                                                       parentEndpointId);
-            if (err == CHIP_NO_ERROR)
-            {
-                ChipLogProgress(DeviceLayer, "Added device %s to dynamic endpoint %u (index=%u)", device->GetName(),
-                                gCurrentEndpointId, index);
-                return index;
-            }
+            device.SetEndpointId(kInvalidEndpointId);
+            return err;
+        }
 
-            if (err != CHIP_ERROR_ENDPOINT_EXISTS)
-            {
-                gDevices[index] = nullptr;
-                return -1;
-            }
-
-            if (++gCurrentEndpointId < gFirstDynamicEndpointId)
-            {
-                gCurrentEndpointId = gFirstDynamicEndpointId;
-            }
+        if (++gCurrentEndpointId < gFirstDynamicEndpointId)
+        {
+            gCurrentEndpointId = gFirstDynamicEndpointId;
         }
     }
-
-    ChipLogError(DeviceLayer, "Failed to add dynamic endpoint: no endpoint slot available");
-    return -1;
-}
-
-void PrepareBridgeDevices()
-{
-    std::memset(gDevices, 0, sizeof(gDevices));
-    gDynamicDevice = nullptr;
-
-    gOnOffLight.SetReachable(true);
-    gDimmableLight.SetReachable(true);
-    gExtendedColorLight.SetReachable(true);
-    gPlug.SetReachable(true);
-
-    gOnOffLight.SetChangeCallback(HandleDeviceStatusChanged);
-    gDimmableLight.SetChangeCallback(HandleDeviceStatusChanged);
-    gExtendedColorLight.SetChangeCallback(HandleDeviceStatusChanged);
-    gPlug.SetChangeCallback(HandleDeviceStatusChanged);
 }
 
 struct DynamicDeviceConfig
 {
-    BridgeDevice * device;
     EmberAfEndpointType * endpointType;
     const EmberAfDeviceType * deviceTypes;
     size_t deviceTypeCount;
+    bool isLighting;
+    bool hasLevel;
+    uint32_t colorFeatures;
 };
 
-const DynamicDeviceConfig kDynamicOnOffDeviceConfig = { &gDynamicOnOffLight, &bridgedOnOffLightEndpoint, gBridgedOnOffDeviceTypes,
-                                                        MATTER_ARRAY_SIZE(gBridgedOnOffDeviceTypes) };
-const DynamicDeviceConfig kDynamicDimmableDeviceConfig         = { &gDynamicDimmableLight, &bridgedDimmableLightEndpoint,
-                                                                   gBridgedDimmableDeviceTypes,
-                                                                   MATTER_ARRAY_SIZE(gBridgedDimmableDeviceTypes) };
-const DynamicDeviceConfig kDynamicColorTemperatureDeviceConfig = { &gDynamicColorTemperatureLight,
-                                                                   &bridgedColorTemperatureLightEndpoint,
+const DynamicDeviceConfig kDynamicOnOffDeviceConfig = {
+    &bridgedOnOffLightEndpoint, gBridgedOnOffDeviceTypes, MATTER_ARRAY_SIZE(gBridgedOnOffDeviceTypes), true, false, 0
+};
+const DynamicDeviceConfig kDynamicDimmableDeviceConfig = {
+    &bridgedDimmableLightEndpoint, gBridgedDimmableDeviceTypes, MATTER_ARRAY_SIZE(gBridgedDimmableDeviceTypes), true, true, 0
+};
+const DynamicDeviceConfig kDynamicColorTemperatureDeviceConfig = { &bridgedColorTemperatureLightEndpoint,
                                                                    gBridgedColorTemperatureDeviceTypes,
-                                                                   MATTER_ARRAY_SIZE(gBridgedColorTemperatureDeviceTypes) };
-const DynamicDeviceConfig kDynamicExtendedColorDeviceConfig    = { &gDynamicExtendedColorLight, &bridgedExtendedColorLightEndpoint,
+                                                                   MATTER_ARRAY_SIZE(gBridgedColorTemperatureDeviceTypes),
+                                                                   true,
+                                                                   true,
+                                                                   BridgeDevice::kColorFeatureColorTemperature };
+const DynamicDeviceConfig kDynamicHueSaturationDeviceConfig    = { &bridgedHueSaturationLightEndpoint,
+                                                                   gBridgedHueSaturationDeviceTypes,
+                                                                   MATTER_ARRAY_SIZE(gBridgedHueSaturationDeviceTypes),
+                                                                   true,
+                                                                   true,
+                                                                   BridgeDevice::kColorFeatureHueSaturation };
+const DynamicDeviceConfig kDynamicExtendedColorDeviceConfig    = { &bridgedExtendedColorLightEndpoint,
                                                                    gBridgedExtendedColorDeviceTypes,
-                                                                   MATTER_ARRAY_SIZE(gBridgedExtendedColorDeviceTypes) };
+                                                                   MATTER_ARRAY_SIZE(gBridgedExtendedColorDeviceTypes),
+                                                                   true,
+                                                                   true,
+                                                                   BridgeDevice::kExtendedColorFeatureMap };
+const DynamicDeviceConfig kDynamicPlugDeviceConfig             = {
+    &bridgedOnOffLightEndpoint, gBridgedPlugDeviceTypes, MATTER_ARRAY_SIZE(gBridgedPlugDeviceTypes), false, false, 0
+};
 
 const DynamicDeviceConfig * GetDynamicDeviceConfig(DynamicBridgeDeviceType type)
 {
@@ -389,10 +406,45 @@ const DynamicDeviceConfig * GetDynamicDeviceConfig(DynamicBridgeDeviceType type)
         return &kDynamicDimmableDeviceConfig;
     case DynamicBridgeDeviceType::kColorTemperatureLight:
         return &kDynamicColorTemperatureDeviceConfig;
+    case DynamicBridgeDeviceType::kHueSaturationLight:
+        return &kDynamicHueSaturationDeviceConfig;
     case DynamicBridgeDeviceType::kExtendedColorLight:
         return &kDynamicExtendedColorDeviceConfig;
+    case DynamicBridgeDeviceType::kOnOffPlugInUnit:
+        return &kDynamicPlugDeviceConfig;
     }
     return nullptr;
+}
+
+bool IsValidDeviceParams(const DynamicBridgeDeviceParams & params)
+{
+    return params.name != nullptr && params.name[0] != '\0' && std::strlen(params.name) < BridgeDevice::kNameSize &&
+        params.location != nullptr && std::strlen(params.location) < BridgeDevice::kLocationSize && params.uniqueId != nullptr &&
+        params.uniqueId[0] != '\0' && std::strlen(params.uniqueId) < BridgeDevice::kUniqueIdSize;
+}
+
+bool IsUniqueIdInUse(const char * uniqueId)
+{
+    for (const auto & slot : gDynamicDeviceSlots)
+    {
+        if (slot.device.has_value() && std::strcmp(slot.device->GetUniqueId(), uniqueId) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+uint16_t FindFreeDynamicDeviceSlot()
+{
+    for (uint16_t index = 0; index < CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT; index++)
+    {
+        if (!gDynamicDeviceSlots[index].device.has_value())
+        {
+            return index;
+        }
+    }
+    return CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT;
 }
 
 const EmberAfCluster * FindCluster(const EmberAfEndpointType & endpointType, ClusterId clusterId)
@@ -437,6 +489,7 @@ CHIP_ERROR ValidateDynamicDeviceTemplates()
 {
     const EmberAfCluster * colorTemperatureCluster = FindCluster(bridgedColorTemperatureLightEndpoint, ColorControl::Id);
     const EmberAfCluster * extendedColorCluster    = FindCluster(bridgedExtendedColorLightEndpoint, ColorControl::Id);
+    const EmberAfCluster * hueSaturationCluster    = FindCluster(bridgedHueSaturationLightEndpoint, ColorControl::Id);
 
     VerifyOrReturnError(ContainsAttribute(colorTemperatureCluster, ColorControl::Attributes::RemainingTime::Id),
                         CHIP_ERROR_INTERNAL);
@@ -449,6 +502,10 @@ CHIP_ERROR ValidateDynamicDeviceTemplates()
     VerifyOrReturnError(ContainsAttribute(extendedColorCluster, ColorControl::Attributes::CurrentX::Id), CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(ContainsAttribute(extendedColorCluster, ColorControl::Attributes::CurrentY::Id), CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(ContainsAttribute(extendedColorCluster, ColorControl::Attributes::ColorTemperatureMireds::Id),
+                        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(ContainsAttribute(hueSaturationCluster, ColorControl::Attributes::RemainingTime::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(ContainsAttribute(hueSaturationCluster, ColorControl::Attributes::CurrentHue::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(ContainsAttribute(hueSaturationCluster, ColorControl::Attributes::CurrentSaturation::Id),
                         CHIP_ERROR_INTERNAL);
 
     VerifyOrReturnError(AcceptsCommand(colorTemperatureCluster, ColorControl::Commands::MoveToColorTemperature::Id),
@@ -465,6 +522,23 @@ CHIP_ERROR ValidateDynamicDeviceTemplates()
                         CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(AcceptsCommand(extendedColorCluster, ColorControl::Commands::MoveToColorTemperature::Id),
                         CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(AcceptsCommand(hueSaturationCluster, ColorControl::Commands::MoveToHue::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(AcceptsCommand(hueSaturationCluster, ColorControl::Commands::MoveHue::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(AcceptsCommand(hueSaturationCluster, ColorControl::Commands::StepHue::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(AcceptsCommand(hueSaturationCluster, ColorControl::Commands::MoveToSaturation::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(AcceptsCommand(hueSaturationCluster, ColorControl::Commands::MoveSaturation::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(AcceptsCommand(hueSaturationCluster, ColorControl::Commands::StepSaturation::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(AcceptsCommand(hueSaturationCluster, ColorControl::Commands::MoveToHueAndSaturation::Id),
+                        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(AcceptsCommand(hueSaturationCluster, ColorControl::Commands::StopMoveStep::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!ContainsAttribute(hueSaturationCluster, ColorControl::Attributes::ColorTemperatureMireds::Id),
+                        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!AcceptsCommand(hueSaturationCluster, ColorControl::Commands::MoveToColorTemperature::Id),
+                        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!AcceptsCommand(hueSaturationCluster, ColorControl::Commands::MoveColorTemperature::Id),
+                        CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!AcceptsCommand(hueSaturationCluster, ColorControl::Commands::StepColorTemperature::Id),
+                        CHIP_ERROR_INTERNAL);
     return CHIP_NO_ERROR;
 }
 
@@ -477,12 +551,17 @@ BridgeDevice * FindBridgeDevice(EndpointId endpoint)
     {
         return nullptr;
     }
-    return gDevices[index];
+    auto & device = gDynamicDeviceSlots[index].device;
+    return device.has_value() ? &device.value() : nullptr;
 }
 
 CHIP_ERROR InitBridgeApp()
 {
-    PrepareBridgeDevices();
+    for (auto & slot : gDynamicDeviceSlots)
+    {
+        slot.device.reset();
+        std::memset(slot.dataVersions, 0, sizeof(slot.dataVersions));
+    }
     CHIP_ERROR templateValidationError = ValidateDynamicDeviceTemplates();
     VerifyOrReturnError(templateValidationError == CHIP_NO_ERROR, templateValidationError);
 
@@ -499,88 +578,66 @@ CHIP_ERROR InitBridgeApp()
     emberAfSetDeviceTypeList(0, Span<const EmberAfDeviceType>(gRootDeviceTypes));
     emberAfSetDeviceTypeList(kAggregatorEndpointId, Span<const EmberAfDeviceType>(gAggregateNodeDeviceTypes));
 
-    VerifyOrReturnError(AddDeviceEndpoint(&gOnOffLight, &bridgedOnOffLightEndpoint,
-                                          Span<const EmberAfDeviceType>(gBridgedOnOffDeviceTypes),
-                                          Span<DataVersion>(gOnOffLightDataVersions), kAggregatorEndpointId) >= 0,
-                        CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(AddDeviceEndpoint(&gDimmableLight, &bridgedDimmableLightEndpoint,
-                                          Span<const EmberAfDeviceType>(gBridgedDimmableDeviceTypes),
-                                          Span<DataVersion>(gDimmableLightDataVersions), kAggregatorEndpointId) >= 0,
-                        CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(AddDeviceEndpoint(&gExtendedColorLight, &bridgedExtendedColorLightEndpoint,
-                                          Span<const EmberAfDeviceType>(gBridgedExtendedColorDeviceTypes),
-                                          Span<DataVersion>(gExtendedColorLightDataVersions), kAggregatorEndpointId) >= 0,
-                        CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(AddDeviceEndpoint(&gPlug, &bridgedOnOffLightEndpoint,
-                                          Span<const EmberAfDeviceType>(gBridgedPlugDeviceTypes),
-                                          Span<DataVersion>(gPlugDataVersions), kAggregatorEndpointId) >= 0,
-                        CHIP_ERROR_INTERNAL);
-
     return CHIP_NO_ERROR;
 }
 
-bool IsDynamicBridgeDeviceAddedLocked()
+CHIP_ERROR AddDynamicBridgeDeviceLocked(const DynamicBridgeDeviceParams & params, EndpointId & endpoint)
 {
     assertChipStackLockedByCurrentThread();
-    return gDynamicDevice != nullptr;
-}
+    endpoint = kInvalidEndpointId;
+    VerifyOrReturnError(IsValidDeviceParams(params), CHIP_ERROR_INVALID_ARGUMENT);
 
-CHIP_ERROR AddDynamicBridgeDeviceLocked(DynamicBridgeDeviceType type)
-{
-    assertChipStackLockedByCurrentThread();
-    VerifyOrReturnError(gDynamicDevice == nullptr, CHIP_ERROR_INCORRECT_STATE);
-
-    const DynamicDeviceConfig * config = GetDynamicDeviceConfig(type);
+    const DynamicDeviceConfig * config = GetDynamicDeviceConfig(params.type);
     VerifyOrReturnError(config != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(!IsUniqueIdInUse(params.uniqueId), CHIP_ERROR_DUPLICATE_KEY_ID);
 
-    VerifyOrReturnError(config->endpointType->clusterCount <= MATTER_ARRAY_SIZE(gDynamicDeviceDataVersions),
-                        CHIP_ERROR_BUFFER_TOO_SMALL);
-    config->device->SetReachable(true);
-    config->device->SetChangeCallback(HandleDeviceStatusChanged);
+    const uint16_t index = FindFreeDynamicDeviceSlot();
+    VerifyOrReturnError(index < CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT, CHIP_ERROR_NO_MEMORY);
 
-    int index = AddDeviceEndpoint(config->device, config->endpointType,
-                                  Span<const EmberAfDeviceType>(config->deviceTypes, config->deviceTypeCount),
-                                  Span<DataVersion>(gDynamicDeviceDataVersions), kAggregatorEndpointId);
-    if (index < 0)
+    DynamicDeviceSlot & slot = gDynamicDeviceSlots[index];
+    VerifyOrReturnError(config->endpointType->clusterCount <= MATTER_ARRAY_SIZE(slot.dataVersions), CHIP_ERROR_BUFFER_TOO_SMALL);
+    std::memset(slot.dataVersions, 0, sizeof(slot.dataVersions));
+    BridgeDevice & device = slot.device.emplace(params.name, params.location, params.uniqueId, config->isLighting, config->hasLevel,
+                                                config->colorFeatures);
+    device.SetReachable(true);
+    device.SetChangeCallback(HandleDeviceStatusChanged);
+
+    CHIP_ERROR err = AddDeviceEndpoint(index, device, config->endpointType,
+                                       Span<const EmberAfDeviceType>(config->deviceTypes, config->deviceTypeCount),
+                                       Span<DataVersion>(slot.dataVersions), kAggregatorEndpointId, endpoint);
+    if (err != CHIP_NO_ERROR)
     {
-        config->device->SetChangeCallback(nullptr);
-        config->device->SetReachable(false);
-        config->device->SetEndpointId(kInvalidEndpointId);
-        return CHIP_ERROR_NO_MEMORY;
+        device.SetChangeCallback(nullptr);
+        device.SetReachable(false);
+        slot.device.reset();
+        return err;
     }
 
-    gDynamicDevice = config->device;
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR RemoveDynamicBridgeDeviceLocked()
+CHIP_ERROR RemoveDynamicBridgeDeviceLocked(EndpointId endpoint)
 {
     assertChipStackLockedByCurrentThread();
-    VerifyOrReturnError(gDynamicDevice != nullptr, CHIP_ERROR_NOT_FOUND);
+    const uint16_t index = emberAfGetDynamicIndexFromEndpoint(endpoint);
+    VerifyOrReturnError(index < CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT, CHIP_ERROR_NOT_FOUND);
 
-    for (uint8_t index = 0; index < CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT; index++)
-    {
-        if (gDevices[index] != gDynamicDevice)
-        {
-            continue;
-        }
+    DynamicDeviceSlot & slot = gDynamicDeviceSlots[index];
+    VerifyOrReturnError(slot.device.has_value() && slot.device->GetEndpointId() == endpoint, CHIP_ERROR_NOT_FOUND);
 
-        EndpointId endpoint = emberAfClearDynamicEndpoint(index);
-        VerifyOrReturnError(endpoint != 0, CHIP_ERROR_INTERNAL);
+    EndpointId removedEndpoint = emberAfClearDynamicEndpoint(index);
+    VerifyOrReturnError(removedEndpoint == endpoint, CHIP_ERROR_INTERNAL);
 
-        BridgeDevice * removedDevice = gDynamicDevice;
-        gDevices[index]              = nullptr;
-        gDynamicDevice               = nullptr;
-        removedDevice->SetChangeCallback(nullptr);
-        removedDevice->SetReachable(false);
-        removedDevice->SetEndpointId(kInvalidEndpointId);
+    BridgeDevice & device = slot.device.value();
+    ChipLogProgress(DeviceLayer, "Removed dynamic device %s from dynamic endpoint %u (index=%u)", device.GetName(), endpoint,
+                    static_cast<unsigned>(index));
+    device.SetChangeCallback(nullptr);
+    device.SetReachable(false);
+    device.SetEndpointId(kInvalidEndpointId);
+    slot.device.reset();
+    std::memset(slot.dataVersions, 0, sizeof(slot.dataVersions));
 
-        ChipLogProgress(DeviceLayer, "Removed dynamic device %s from dynamic endpoint %u (index=%u)", removedDevice->GetName(),
-                        endpoint, index);
-        return CHIP_NO_ERROR;
-    }
-
-    return CHIP_ERROR_INTERNAL;
+    return CHIP_NO_ERROR;
 }
 
 void emberAfActionsClusterInitCallback(EndpointId endpoint)
