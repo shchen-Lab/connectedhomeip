@@ -13,6 +13,22 @@
 # limitations under the License.
 
 import("//build_overrides/chip.gni")
+import("${chip_root}/src/platform/bouffalolab/common/args.gni")
+
+config("kvs_options") {
+  defines = []
+
+  if (bflb_kvs_negative_cache) {
+    defines += [ "CHIP_DEVICE_CONFIG_BFLB_KVS_NEGATIVE_CACHE=1" ]
+  }
+
+  if (bflb_kvs_file_handle_cache) {
+    defines += [
+      "CHIP_DEVICE_CONFIG_BFLB_KVS_FILE_HANDLE_CACHE=1",
+      "CHIP_DEVICE_CONFIG_BFLB_KVS_FILE_HANDLE_CACHE_CAPACITY=${bflb_kvs_file_handle_cache_capacity}",
+    ]
+  }
+}
 
 # Empty stub for cmake-based builds where bouffalo_sdk cmake handles mbedtls.
 group("mbedtls_stub") {

@@ -26,6 +26,8 @@ if (chip_enable_openthread) {
 }
 
 static_library("BL702L") {
+  configs += [ "../common:kvs_options" ]
+
   sources = [
     "DiagnosticDataProviderImpl.cpp",
     "PlatformManagerImpl.cpp",

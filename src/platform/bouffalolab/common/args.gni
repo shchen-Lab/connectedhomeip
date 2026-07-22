@@ -16,4 +16,9 @@ declare_args() {
   chip_enable_factory_data = false
 
   bouffalo_sdk_component_easyflash_enabled = false
+
+  # KVS optimizations can be switched independently for comparison builds.
+  bflb_kvs_negative_cache = true
+  bflb_kvs_file_handle_cache = true
+  bflb_kvs_file_handle_cache_capacity = 8
 }

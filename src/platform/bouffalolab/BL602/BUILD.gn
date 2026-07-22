@@ -22,6 +22,8 @@ import("${chip_root}/src/platform/bouffalolab/common/args.gni")
 assert(chip_device_platform == "bl602")
 
 static_library("BL602") {
+  configs += [ "../common:kvs_options" ]
+
   sources = [
     "ConfigurationManagerImpl.cpp",
     "ConnectivityManagerImpl.cpp",

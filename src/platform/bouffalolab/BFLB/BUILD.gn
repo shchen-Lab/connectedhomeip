@@ -35,6 +35,8 @@ config("bflb_warnings") {
 }
 
 static_library("BFLB") {
+  configs += [ "../common:kvs_options" ]
+
   sources = [
     "DiagnosticDataProviderImpl.cpp",
     "PlatformManagerImpl.cpp",
