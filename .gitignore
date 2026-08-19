@@ -10,6 +10,9 @@
 
 # Build System
 out/
+
+# BL616 certification test run logs (scripts/tests/bl616_*.sh)
+/test_results/
 /examples/virtual-device-app/android/App/buildSrc/build/
 /src/test_driver/nrfconnect/build/
 /src/darwin/Framework/build/
