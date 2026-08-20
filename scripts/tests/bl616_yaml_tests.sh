@@ -53,18 +53,24 @@ RESULTS_ROOT="${RESULTS_ROOT:-$CHIP_ROOT/test_results}"
 LOG_DIR="${LOG_DIR:-$RESULTS_ROOT/bl616_yaml/$(date +%Y%m%d_%H%M%S)}"
 # ---------------------------
 
-# 25 个已验证用例(排除: OO_2_3/2_4 手动, OO_2_7 缺 Scenes, CC_6_5 手动, *_Simulated)
+# 37 个已验证用例(排除: OO_2_3/2_4 手动, OO_2_7 缺 Scenes, CC_6_5 手动,
+#                    BINFO_2_2 需人工重启 DUT 无法自动化,
+#                    LVL_8_1/9_1 DUT-Client 或依赖 Scenes(不支持), G_3_2 DUT-Client(不支持),
+#                    G_2_4 依赖 MCORE.G.MULTIENDPOINT(单 endpoint 设备不适用), *_Simulated)
 TESTS=(
     Test_TC_OO_2_1 Test_TC_OO_2_2 Test_TC_OO_2_6
-    Test_TC_LVL_2_1 Test_TC_LVL_2_2
+    Test_TC_LVL_2_1 Test_TC_LVL_2_2 Test_TC_LVL_3_1 Test_TC_LVL_4_1 Test_TC_LVL_5_1
+    Test_TC_LVL_6_1 Test_TC_LVL_7_1
     Test_TC_CC_3_1 Test_TC_CC_3_2 Test_TC_CC_3_3
     Test_TC_CC_4_1 Test_TC_CC_4_2 Test_TC_CC_4_3 Test_TC_CC_4_4
     Test_TC_CC_5_1 Test_TC_CC_5_2 Test_TC_CC_5_3
     Test_TC_CC_6_1 Test_TC_CC_6_2 Test_TC_CC_6_3
     Test_TC_CC_7_1 Test_TC_CC_7_2 Test_TC_CC_7_3 Test_TC_CC_7_4
-    Test_TC_BINFO_2_2
+    Test_TC_CC_8_1
+    Test_TC_CC_9_1 Test_TC_CC_9_2 Test_TC_CC_9_3
+    Test_TC_BINFO_2_1 Test_TC_BINFO_3_1
     Test_TC_DESC_2_1
-    Test_TC_G_2_1
+    Test_TC_G_2_1 Test_TC_G_2_2 Test_TC_G_2_3
 )
 
 COMMISSION=0
