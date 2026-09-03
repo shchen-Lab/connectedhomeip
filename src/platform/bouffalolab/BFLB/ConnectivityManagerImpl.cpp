@@ -31,6 +31,36 @@ extern "C" {
 }
 
 #include <bl_fw_api.h>
+#include <inet/UDPEndPointImplLwIP.h>
+
+namespace
+{
+extern "C" void app_dtim_activity_notify(void) __attribute__((weak));
+
+class BflbEndpointQueueFilter final : public chip::Inet::EndpointQueueFilter
+{
+public:
+    FilterOutcome FilterBeforeEnqueue(const void * endpoint, const chip::Inet::IPPacketInfo & pktInfo,
+                                      const chip::System::PacketBufferHandle & pktPayload) override
+    {
+        (void) endpoint;
+        (void) pktInfo;
+        (void) pktPayload;
+        if (app_dtim_activity_notify != nullptr)
+        {
+            app_dtim_activity_notify();
+        }
+        return FilterOutcome::kAllowPacket;
+    }
+};
+
+BflbEndpointQueueFilter sEndpointQueueFilter;
+}
+
+extern "C" void bflb_connectivity_manager_set_endpoint_queue_filter(void)
+{
+    chip::Inet::UDPEndPointImpl::SetQueueFilter(&sEndpointQueueFilter);
+}
 
 using namespace ::chip;
 

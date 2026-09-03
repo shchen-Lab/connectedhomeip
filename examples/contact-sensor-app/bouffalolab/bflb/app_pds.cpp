@@ -32,10 +32,19 @@
  * components/os/power_mgmt/tickless.c (linked via _power_mgmt source_set).
  */
 
+#include <lib/core/CHIPConfig.h>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/PlatformManager.h>
+
+#include <atomic>
 
 #include <FreeRTOS.h>
 #include <task.h>
+
+#include "app_pds.h"
+#include <wifi_pkt_hooks.h>
+
+extern "C" void bflb_connectivity_manager_set_endpoint_queue_filter(void);
 
 extern "C" {
 #if defined(BL616CL)
@@ -72,10 +81,175 @@ static uint64_t s_sleep_enter_rtc       = 0;
 #endif
 static struct bflb_device_s * s_sha_dev = NULL;
 
+namespace {
+
+constexpr uint8_t kActiveDtim                 = 1;
+constexpr uint8_t kIdleDtim                   = 10;
+constexpr uint32_t kDtimActivityDurationMs    = 3000;
+constexpr uint32_t kDtimActivityNotification  = 1U << 0;
+constexpr uint32_t kDtimControlNotification   = 1U << 1;
+constexpr uint32_t kDtimNotificationMask      = kDtimActivityNotification | kDtimControlNotification;
+
+StaticTask_t sDtimActivityTaskStorage;
+StackType_t sDtimActivityTaskStack[configMINIMAL_STACK_SIZE];
+TaskHandle_t sDtimActivityTaskHandle = nullptr;
+uint8_t sCurrentDtim                 = 0;
+std::atomic<uint32_t> sDtimHoldMask{ APP_DTIM_HOLD_STARTUP };
+std::atomic<uint32_t> sDtimActivityGeneration{ 0 };
+std::atomic<uint32_t> sDtimProcessedGeneration{ 0 };
+
+extern "C" void * app_dtim_wifi_output_hook(bool is_sta, void * packet, void * arg)
+{
+    (void) is_sta;
+    (void) arg;
+    app_dtim_activity_notify();
+    return packet;
+}
+
+void SetDtim(uint8_t dtim)
+{
+    if (sCurrentDtim == dtim)
+    {
+        return;
+    }
+
+    set_dtim_config(dtim);
+    bl_lp_fw_bcn_loss_cfg_dtim_default(dtim);
+    sCurrentDtim = dtim;
+    ChipLogDetail(DeviceLayer, "[LP] DTIM switched to %u", dtim);
+}
+
+void DtimActivityTask(void * arg)
+{
+    (void) arg;
+
+    bool dtimActive = true;
+    for (;;)
+    {
+        uint32_t notificationValue = 0;
+        const TickType_t waitTime = dtimActive ? pdMS_TO_TICKS(kDtimActivityDurationMs) : portMAX_DELAY;
+        const BaseType_t notificationReceived =
+            xTaskNotifyWait(0, kDtimNotificationMask, &notificationValue, waitTime);
+
+        if (notificationReceived == pdTRUE && (notificationValue & kDtimActivityNotification) != 0)
+        {
+            dtimActive = true;
+        }
+        else if (notificationReceived != pdTRUE)
+        {
+            dtimActive = false;
+        }
+
+        const bool holdDtim1 = sDtimHoldMask.load(std::memory_order_acquire) != 0;
+        SetDtim(dtimActive || holdDtim1 ? kActiveDtim : kIdleDtim);
+        sDtimProcessedGeneration.store(sDtimActivityGeneration.load(std::memory_order_acquire),
+                                       std::memory_order_release);
+    }
+}
+
+} // namespace
+
 static void app_lp_config_gpio(void);
 static void app_lp_config_wakup_gpio(void);
 
-/* -------------------------------------------------------------------------- */
+extern "C" void app_dtim_activity_notify(void)
+{
+    if (sDtimActivityTaskHandle == nullptr)
+    {
+        return;
+    }
+
+    sDtimActivityGeneration.fetch_add(1, std::memory_order_release);
+
+    BaseType_t notifyResult;
+    if (xPortIsInsideInterrupt())
+    {
+        BaseType_t higherPriorityTaskWoken = pdFALSE;
+        notifyResult = xTaskNotifyFromISR(sDtimActivityTaskHandle, kDtimActivityNotification, eSetBits,
+                                          &higherPriorityTaskWoken);
+        portYIELD_FROM_ISR(higherPriorityTaskWoken);
+    }
+    else
+    {
+        notifyResult = xTaskNotify(sDtimActivityTaskHandle, kDtimActivityNotification, eSetBits);
+    }
+
+    if (notifyResult != pdPASS)
+    {
+        ChipLogError(DeviceLayer, "[LP] Failed to notify DTIM activity task");
+    }
+}
+
+extern "C" void app_dtim_set_hold(enum app_dtim_hold_reason reason, bool hold)
+{
+    const uint32_t reasonMask = static_cast<uint32_t>(reason);
+    if (hold)
+    {
+        sDtimHoldMask.fetch_or(reasonMask, std::memory_order_acq_rel);
+    }
+    else
+    {
+        sDtimHoldMask.fetch_and(~reasonMask, std::memory_order_acq_rel);
+    }
+
+    if (sDtimActivityTaskHandle != nullptr)
+    {
+        sDtimActivityGeneration.fetch_add(1, std::memory_order_release);
+        xTaskNotify(sDtimActivityTaskHandle, kDtimControlNotification, eSetBits);
+    }
+}
+
+extern "C" int app_dtim_pm_check(void)
+{
+    if (pm_pbufc_check() != 0)
+    {
+        return 1;
+    }
+
+    return sDtimActivityGeneration.load(std::memory_order_acquire) !=
+            sDtimProcessedGeneration.load(std::memory_order_acquire)
+        ? 1
+        : 0;
+}
+
+static void app_dtim_platform_event(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg)
+{
+    (void) arg;
+    if (event == nullptr)
+    {
+        return;
+    }
+
+    switch (event->Type)
+    {
+    case chip::DeviceLayer::DeviceEventType::kWiFiConnectivityChange:
+        app_dtim_set_hold(APP_DTIM_HOLD_RECOVERY, true);
+        break;
+    case chip::DeviceLayer::DeviceEventType::kInterfaceIpAddressChanged:
+        if (event->InterfaceIpAddressChanged.Type == chip::DeviceLayer::InterfaceIpChangeType::kIpV4_Assigned ||
+            event->InterfaceIpAddressChanged.Type == chip::DeviceLayer::InterfaceIpChangeType::kIpV6_Assigned)
+        {
+            bflb_connectivity_manager_set_endpoint_queue_filter();
+            app_dtim_set_hold(APP_DTIM_HOLD_STARTUP, false);
+            app_dtim_set_hold(APP_DTIM_HOLD_RECOVERY, false);
+        }
+        else
+        {
+            app_dtim_set_hold(APP_DTIM_HOLD_RECOVERY, true);
+        }
+        break;
+    case chip::DeviceLayer::DeviceEventType::kCHIPoBLEConnectionEstablished:
+        app_dtim_set_hold(APP_DTIM_HOLD_COMMISSIONING, true);
+        break;
+    case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
+    case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:
+        app_dtim_set_hold(APP_DTIM_HOLD_COMMISSIONING, false);
+        break;
+    default:
+        break;
+    }
+}
+
 /* GPIO interrupt handlers                                                    */
 /* -------------------------------------------------------------------------- */
 static void gpio_isr(uint8_t pin)
@@ -206,7 +380,7 @@ static int lp_exit(void * arg)
 
 extern "C" int bflb_pm_app_check(void)
 {
-    return pm_pbufc_check();
+    return app_dtim_pm_check();
 }
 
 extern "C" void app_pre_matter_init(void)
@@ -299,6 +473,22 @@ static void app_lp_config_wakup_gpio(void)
 void app_pds_init(void (*pinHandler)(int, bool))
 {
     s_pin_handler = pinHandler;
+
+    sDtimActivityTaskHandle = xTaskCreateStatic(DtimActivityTask, "DtimActivity", configMINIMAL_STACK_SIZE, nullptr,
+                                                configMAX_PRIORITIES - 2, sDtimActivityTaskStack,
+                                                &sDtimActivityTaskStorage);
+    if (sDtimActivityTaskHandle == nullptr)
+    {
+        ChipLogError(DeviceLayer, "[LP] Failed to create DTIM activity task");
+    }
+    app_dtim_activity_notify();
+
+    if (chip::DeviceLayer::PlatformMgr().AddEventHandler(app_dtim_platform_event) != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "[LP] Failed to register DTIM platform event handler");
+    }
+
+    bl_pkt_eth_output_hook_register(app_dtim_wifi_output_hook, nullptr);
 
     app_clock_init();
 
