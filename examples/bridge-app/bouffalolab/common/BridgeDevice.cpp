@@ -104,6 +104,15 @@ void BridgeDevice::SetCurrentX(uint16_t currentX)
     NotifyIfChanged(changed, kChanged_Color);
 }
 
+void BridgeDevice::SetHueSaturationState(uint8_t hue, uint8_t saturation)
+{
+    VerifyOrReturn(HasHueSaturation());
+    bool changed = mHue != hue || mSaturation != saturation || mColorMode != kColorModeHueSaturation;
+    mHue = hue; mSaturation = saturation;
+    mColorMode = mEnhancedColorMode = kColorModeHueSaturation;
+    NotifyIfChanged(changed, kChanged_Color);
+}
+
 void BridgeDevice::SetCurrentY(uint16_t currentY)
 {
     VerifyOrReturn(HasXY());

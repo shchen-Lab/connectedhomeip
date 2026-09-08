@@ -35,7 +35,7 @@ public:
     static constexpr uint32_t kColorFeatureXY               = 0x00000008;
     static constexpr uint32_t kColorFeatureColorTemperature = 0x00000010;
     static constexpr uint32_t kExtendedColorFeatureMap =
-        kColorFeatureHueSaturation | kColorFeatureXY | kColorFeatureColorTemperature;
+        kColorFeatureHueSaturation | kColorFeatureColorTemperature;
 
     static constexpr uint8_t kColorModeHueSaturation    = 0;
     static constexpr uint8_t kColorModeCurrentXy       = 1;
@@ -88,6 +88,7 @@ public:
     void SetOnLevel(uint8_t level);
     void SetHue(uint8_t hue);
     void SetSaturation(uint8_t saturation);
+    void SetHueSaturationState(uint8_t hue, uint8_t saturation);
     void SetCurrentX(uint16_t currentX);
     void SetCurrentY(uint16_t currentY);
     void SetColorTemperatureMireds(uint16_t temperatureMireds);

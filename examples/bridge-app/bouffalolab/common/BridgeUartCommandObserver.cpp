@@ -21,6 +21,7 @@
 #include "BridgeAppInternal.h"
 #include "BridgeDevice.h"
 #include "LightUartBridge.h"
+#include "BridgeUartRuntime.h"
 #include "LightUartCommandEncoder.h"
 
 #include <app-common/zap-generated/cluster-objects.h>
@@ -52,7 +53,7 @@ bool SupportsColorCommand(const BridgeDevice & device, CommandId commandId)
     case ColorControl::Commands::MoveToColor::Id:
     case ColorControl::Commands::MoveColor::Id:
     case ColorControl::Commands::StepColor::Id:
-        return device.HasXY();
+        return false;
     case ColorControl::Commands::MoveToColorTemperature::Id:
     case ColorControl::Commands::MoveColorTemperature::Id:
     case ColorControl::Commands::StepColorTemperature::Id:
@@ -74,9 +75,9 @@ bool SupportsCommand(const BridgeDevice & device, ClusterId clusterId, CommandId
     switch (clusterId)
     {
     case OnOff::Id:
-        return true;
+        return commandId <= OnOff::Commands::Toggle::Id;
     case LevelControl::Id:
-        return device.HasLevel();
+        return device.HasLevel() && commandId <= LevelControl::Commands::StopWithOnOff::Id;
     case ColorControl::Id:
         return SupportsColorCommand(device, commandId);
     default:
@@ -93,7 +94,8 @@ void ForwardCommand(CommandHandlerInterface::HandlerContext & context, const cha
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(Zcl, "Failed to decode bridge UART command %s: %" CHIP_ERROR_FORMAT, name, err.Format());
-        context.SetCommandNotHandled();
+        context.SetCommandHandled();
+        context.mCommandHandler.AddStatus(context.mRequestPath, Protocols::InteractionModel::Status::InvalidCommand);
         return;
     }
 
@@ -103,7 +105,8 @@ void ForwardCommand(CommandHandlerInterface::HandlerContext & context, const cha
     if (status != LU_OK)
     {
         ChipLogError(Zcl, "Failed to encode bridge UART command %s: %d", name, static_cast<int>(status));
-        context.SetCommandNotHandled();
+        context.SetCommandHandled();
+        context.mCommandHandler.AddStatus(context.mRequestPath, Protocols::InteractionModel::Status::InvalidCommand);
         return;
     }
 
@@ -111,16 +114,19 @@ void ForwardCommand(CommandHandlerInterface::HandlerContext & context, const cha
                                      context.mRequestPath.mCommandId, payload, payloadLen);
     if (err == CHIP_NO_ERROR)
     {
+        BridgeUartHoldCommand(context.mCommandHandler, context.mRequestPath);
         ChipLogProgress(Zcl, "Forwarded bridge command to UART: ep=%u cluster=" ChipLogFormatMEI " command=" ChipLogFormatMEI " %s",
                         static_cast<unsigned>(context.mRequestPath.mEndpointId), ChipLogValueMEI(context.mRequestPath.mClusterId),
                         ChipLogValueMEI(context.mRequestPath.mCommandId), name);
     }
     else
     {
+        context.mCommandHandler.AddStatus(context.mRequestPath, err == CHIP_ERROR_BUSY ?
+            Protocols::InteractionModel::Status::Busy : Protocols::InteractionModel::Status::Failure);
         ChipLogError(Zcl, "Failed to forward bridge UART command %s: %" CHIP_ERROR_FORMAT, name, err.Format());
     }
 
-    context.SetCommandNotHandled();
+    context.SetCommandHandled();
 }
 
 #define FORWARD_COMMAND(CommandType)                                                                                               \
@@ -168,9 +174,6 @@ void ForwardColorControlCommand(CommandHandlerInterface::HandlerContext & contex
         FORWARD_COMMAND(ColorControl::Commands::MoveSaturation);
         FORWARD_COMMAND(ColorControl::Commands::StepSaturation);
         FORWARD_COMMAND(ColorControl::Commands::MoveToHueAndSaturation);
-        FORWARD_COMMAND(ColorControl::Commands::MoveToColor);
-        FORWARD_COMMAND(ColorControl::Commands::MoveColor);
-        FORWARD_COMMAND(ColorControl::Commands::StepColor);
         FORWARD_COMMAND(ColorControl::Commands::MoveToColorTemperature);
         FORWARD_COMMAND(ColorControl::Commands::StopMoveStep);
         FORWARD_COMMAND(ColorControl::Commands::MoveColorTemperature);
@@ -190,8 +193,15 @@ public:
     void InvokeCommand(HandlerContext & context) override
     {
         BridgeDevice * device = FindBridgeDevice(context.mRequestPath.mEndpointId);
-        if (device == nullptr || !SupportsCommand(*device, context.mRequestPath.mClusterId, context.mRequestPath.mCommandId))
+        if (device == nullptr)
         {
+            return;
+        }
+        context.SetCommandHandled();
+        if (!SupportsCommand(*device, context.mRequestPath.mClusterId, context.mRequestPath.mCommandId))
+        {
+            context.mCommandHandler.AddStatus(context.mRequestPath, device->IsReachable() ?
+                Protocols::InteractionModel::Status::UnsupportedCommand : Protocols::InteractionModel::Status::Failure);
             return;
         }
 

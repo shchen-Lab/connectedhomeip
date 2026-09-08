@@ -69,8 +69,6 @@ DECLARE_DYNAMIC_ATTRIBUTE_LIST_BEGIN(colorControlAttrs)
 DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::CurrentHue::Id, INT8U, 1, 0),
     DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::CurrentSaturation::Id, INT8U, 1, 0),
     DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::RemainingTime::Id, INT16U, 2, 0),
-    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::CurrentX::Id, INT16U, 2, 0),
-    DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::CurrentY::Id, INT16U, 2, 0),
     DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::ColorTemperatureMireds::Id, INT16U, 2, 0),
     DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::ColorMode::Id, ENUM8, 1, 0),
     DECLARE_DYNAMIC_ATTRIBUTE(ColorControl::Attributes::Options::Id, BITMAP8, 1, ZAP_ATTRIBUTE_MASK(WRITABLE)),
@@ -171,9 +169,6 @@ constexpr CommandId colorControlIncomingCommands[] = {
     ColorControl::Commands::MoveSaturation::Id,
     ColorControl::Commands::StepSaturation::Id,
     ColorControl::Commands::MoveToHueAndSaturation::Id,
-    ColorControl::Commands::MoveToColor::Id,
-    ColorControl::Commands::MoveColor::Id,
-    ColorControl::Commands::StepColor::Id,
     ColorControl::Commands::MoveToColorTemperature::Id,
     ColorControl::Commands::StopMoveStep::Id,
     ColorControl::Commands::MoveColorTemperature::Id,
@@ -330,8 +325,14 @@ void HandleDeviceStatusChanged(BridgeDevice * device, BridgeDevice::Changed_t it
 
 CHIP_ERROR AddDeviceEndpoint(uint16_t index, BridgeDevice & device, EmberAfEndpointType * endpointType,
                              const Span<const EmberAfDeviceType> & deviceTypeList, const Span<DataVersion> & dataVersionStorage,
-                             EndpointId parentEndpointId, EndpointId & endpoint)
+                             EndpointId parentEndpointId, EndpointId & endpoint, EndpointId requestedEndpoint)
 {
+    const bool restoring = requestedEndpoint != kInvalidEndpointId;
+    if (restoring)
+    {
+        VerifyOrReturnError(requestedEndpoint >= gFirstDynamicEndpointId, CHIP_ERROR_INVALID_ARGUMENT);
+        gCurrentEndpointId = requestedEndpoint;
+    }
     while (true)
     {
         device.SetEndpointId(gCurrentEndpointId);
@@ -345,7 +346,7 @@ CHIP_ERROR AddDeviceEndpoint(uint16_t index, BridgeDevice & device, EmberAfEndpo
             return CHIP_NO_ERROR;
         }
 
-        if (err != CHIP_ERROR_ENDPOINT_EXISTS)
+        if (restoring || err != CHIP_ERROR_ENDPOINT_EXISTS)
         {
             device.SetEndpointId(kInvalidEndpointId);
             return err;
@@ -499,8 +500,8 @@ CHIP_ERROR ValidateDynamicDeviceTemplates()
     VerifyOrReturnError(ContainsAttribute(extendedColorCluster, ColorControl::Attributes::CurrentHue::Id), CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(ContainsAttribute(extendedColorCluster, ColorControl::Attributes::CurrentSaturation::Id),
                         CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(ContainsAttribute(extendedColorCluster, ColorControl::Attributes::CurrentX::Id), CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(ContainsAttribute(extendedColorCluster, ColorControl::Attributes::CurrentY::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!ContainsAttribute(extendedColorCluster, ColorControl::Attributes::CurrentX::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!ContainsAttribute(extendedColorCluster, ColorControl::Attributes::CurrentY::Id), CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(ContainsAttribute(extendedColorCluster, ColorControl::Attributes::ColorTemperatureMireds::Id),
                         CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(ContainsAttribute(hueSaturationCluster, ColorControl::Attributes::RemainingTime::Id), CHIP_ERROR_INTERNAL);
@@ -515,9 +516,9 @@ CHIP_ERROR ValidateDynamicDeviceTemplates()
                         CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(AcceptsCommand(colorTemperatureCluster, ColorControl::Commands::StepColorTemperature::Id),
                         CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(AcceptsCommand(extendedColorCluster, ColorControl::Commands::MoveToColor::Id), CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(AcceptsCommand(extendedColorCluster, ColorControl::Commands::MoveColor::Id), CHIP_ERROR_INTERNAL);
-    VerifyOrReturnError(AcceptsCommand(extendedColorCluster, ColorControl::Commands::StepColor::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!AcceptsCommand(extendedColorCluster, ColorControl::Commands::MoveToColor::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!AcceptsCommand(extendedColorCluster, ColorControl::Commands::MoveColor::Id), CHIP_ERROR_INTERNAL);
+    VerifyOrReturnError(!AcceptsCommand(extendedColorCluster, ColorControl::Commands::StepColor::Id), CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(AcceptsCommand(extendedColorCluster, ColorControl::Commands::MoveToHueAndSaturation::Id),
                         CHIP_ERROR_INTERNAL);
     VerifyOrReturnError(AcceptsCommand(extendedColorCluster, ColorControl::Commands::MoveToColorTemperature::Id),
@@ -599,12 +600,13 @@ CHIP_ERROR AddDynamicBridgeDeviceLocked(const DynamicBridgeDeviceParams & params
     std::memset(slot.dataVersions, 0, sizeof(slot.dataVersions));
     BridgeDevice & device = slot.device.emplace(params.name, params.location, params.uniqueId, config->isLighting, config->hasLevel,
                                                 config->colorFeatures);
-    device.SetReachable(true);
+    // A UART device is not reachable until binding and its first valid snapshot have been accepted by the Bridge.
+    device.SetReachable(false);
     device.SetChangeCallback(HandleDeviceStatusChanged);
 
     CHIP_ERROR err = AddDeviceEndpoint(index, device, config->endpointType,
                                        Span<const EmberAfDeviceType>(config->deviceTypes, config->deviceTypeCount),
-                                       Span<DataVersion>(slot.dataVersions), kAggregatorEndpointId, endpoint);
+                                       Span<DataVersion>(slot.dataVersions), kAggregatorEndpointId, endpoint, params.requestedEndpoint);
     if (err != CHIP_NO_ERROR)
     {
         device.SetChangeCallback(nullptr);

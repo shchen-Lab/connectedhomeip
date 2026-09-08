@@ -20,6 +20,7 @@
 
 #include "BridgeUartCommandObserver.h"
 #include "LightUartBridge.h"
+#include "BridgeUartRuntime.h"
 
 #include <lib/support/CodeUtils.h>
 #include <platform/LockTracker.h>
@@ -28,5 +29,6 @@ CHIP_ERROR InitBridgeUart()
 {
     assertChipStackLockedByCurrentThread();
     ReturnErrorOnFailure(InitLightUartBridge());
+    ReturnErrorOnFailure(InitBridgeUartRuntime());
     return InitBridgeUartCommandObserver();
 }

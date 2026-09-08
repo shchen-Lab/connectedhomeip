@@ -226,6 +226,8 @@ target_sources(app PRIVATE
   ${EXAMPLE_DIR}/common/BridgeAttributeAccess.cpp
   ${EXAMPLE_DIR}/common/BridgeDevice.cpp
   ${EXAMPLE_DIR}/common/BridgeUart.cpp
+  ${EXAMPLE_DIR}/common/BridgeUartLifecycle.cpp
+  ${EXAMPLE_DIR}/common/BridgeUartRuntime.cpp
   ${EXAMPLE_DIR}/common/BridgeUartAttribute.cpp
   ${EXAMPLE_DIR}/common/BridgeUartCommandObserver.cpp
   ${EXAMPLE_DIR}/common/LightUartBridge.cpp

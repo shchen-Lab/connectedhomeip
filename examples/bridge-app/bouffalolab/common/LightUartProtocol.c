@@ -72,7 +72,29 @@ uint16_t lu_crc16_ccitt_false(const uint8_t * data, size_t len)
     return crc;
 }
 
-lu_status_t lu_pack_frame(uint8_t type, uint8_t flags, uint16_t seq, uint16_t endpoint, uint32_t cluster, uint32_t id,
+uint32_t lu_crc32_iso_hdlc(const uint8_t * data, size_t len)
+{
+    uint32_t crc = 0xFFFFFFFFu;
+
+    if (data == NULL && len != 0u)
+    {
+        return 0u;
+    }
+
+    for (size_t i = 0; i < len; ++i)
+    {
+        crc ^= data[i];
+        for (uint8_t bit = 0; bit < 8u; ++bit)
+        {
+            crc = (crc & 1u) != 0u ? (crc >> 1) ^ 0xEDB88320u : crc >> 1;
+        }
+    }
+
+    return crc ^ 0xFFFFFFFFu;
+}
+
+lu_status_t lu_pack_frame(uint8_t type, uint8_t flags, uint16_t seq, uint32_t session_id, uint32_t uart_device_id,
+                          uint16_t endpoint, uint32_t binding_version, uint32_t cluster, uint32_t id,
                           const uint8_t * payload, uint16_t payload_len, uint8_t * out, size_t out_cap, size_t * out_len)
 {
     const size_t total_len = LU_MIN_FRAME_SIZE + payload_len;
@@ -97,22 +119,103 @@ lu_status_t lu_pack_frame(uint8_t type, uint8_t flags, uint16_t seq, uint16_t en
     out[3] = type;
     out[4] = flags;
     put_u16_le(&out[5], seq);
-    put_u16_le(&out[7], endpoint);
-    put_u32_le(&out[9], cluster);
-    put_u32_le(&out[13], id);
-    put_u16_le(&out[17], payload_len);
+    put_u32_le(&out[7], session_id);
+    put_u32_le(&out[11], uart_device_id);
+    put_u16_le(&out[15], endpoint);
+    put_u32_le(&out[17], binding_version);
+    put_u32_le(&out[21], cluster);
+    put_u32_le(&out[25], id);
+    put_u16_le(&out[29], payload_len);
     if (payload_len != 0u)
     {
-        memcpy(&out[19], payload, payload_len);
+        memcpy(&out[31], payload, payload_len);
     }
 
     crc = lu_crc16_ccitt_false(&out[2], LU_CRC_HEADER_SIZE + payload_len);
-    put_u16_le(&out[19u + payload_len], crc);
-    out[21u + payload_len] = LU_EOF0;
-    out[22u + payload_len] = LU_EOF1;
+    put_u16_le(&out[31u + payload_len], crc);
+    out[33u + payload_len] = LU_EOF0;
+    out[34u + payload_len] = LU_EOF1;
     *out_len               = total_len;
 
     return LU_OK;
+}
+
+static bool lu_is_response_type(uint8_t type)
+{
+    switch (type)
+    {
+    case LU_MSG_DOWN_COMMAND_RESPONSE:
+    case LU_MSG_DOWN_READ_ATTRIBUTE_RESPONSE:
+    case LU_MSG_HELLO_RESPONSE:
+    case LU_MSG_DEVICE_ADD_RESPONSE:
+    case LU_MSG_DEVICE_REMOVE_RESPONSE:
+    case LU_MSG_DEVICE_BIND_RESPONSE:
+    case LU_MSG_DEVICE_ONLINE_RESPONSE:
+    case LU_MSG_DEVICE_OFFLINE_RESPONSE:
+    case LU_MSG_STATE_SNAPSHOT_RESPONSE:
+    case LU_MSG_HEARTBEAT_RESPONSE:
+    case LU_MSG_DEVICE_STATE_RESPONSE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+lu_status_t lu_validate_frame_semantics(const lu_frame_t * frame)
+{
+    if (frame == NULL)
+    {
+        return LU_ERR_RESERVED_BITS;
+    }
+    if (frame->seq == 0u)
+    {
+        return LU_ERR_BAD_PAYLOAD;
+    }
+
+    switch (frame->type)
+    {
+    case LU_MSG_UP_ATTRIBUTE_REPORT:
+    case LU_MSG_DEVICE_LIST_BEGIN:
+    case LU_MSG_DEVICE_LIST_ENTRY:
+    case LU_MSG_DEVICE_LIST_END:
+        if (frame->type == LU_MSG_DEVICE_LIST_END)
+        {
+            return (frame->flags & 0x3Fu & ~(uint8_t) LU_FLAG_ERROR) == 0u ? LU_OK : LU_ERR_BAD_PAYLOAD;
+        }
+        return (frame->flags & 0x3Fu) == 0u ? LU_OK : LU_ERR_BAD_PAYLOAD;
+    default:
+        break;
+    }
+
+    if (lu_is_response_type(frame->type))
+    {
+        return (frame->flags & LU_FLAG_RESPONSE) != 0u &&
+                (frame->flags & (LU_FLAG_ACK_REQUIRED | LU_FLAG_NULL_VALUE | LU_FLAG_MORE)) == 0u
+            ? LU_OK
+            : LU_ERR_BAD_PAYLOAD;
+    }
+
+    switch (frame->type)
+    {
+    case LU_MSG_DOWN_INVOKE_COMMAND:
+    case LU_MSG_DOWN_READ_ATTRIBUTE:
+    case LU_MSG_HELLO_REQUEST:
+    case LU_MSG_DEVICE_LIST_REQUEST:
+    case LU_MSG_DEVICE_ADD_NOTIFY:
+    case LU_MSG_DEVICE_REMOVE_NOTIFY:
+    case LU_MSG_DEVICE_BIND_REQUEST:
+    case LU_MSG_DEVICE_ONLINE_NOTIFY:
+    case LU_MSG_DEVICE_OFFLINE_NOTIFY:
+    case LU_MSG_HEARTBEAT:
+    case LU_MSG_DEVICE_STATE_REQUEST:
+    case LU_MSG_UP_STATE_SNAPSHOT:
+        return (frame->flags & LU_FLAG_ACK_REQUIRED) != 0u &&
+                (frame->flags & (LU_FLAG_RESPONSE | LU_FLAG_ERROR | LU_FLAG_NULL_VALUE | LU_FLAG_MORE)) == 0u
+            ? LU_OK
+            : LU_ERR_BAD_PAYLOAD;
+    default:
+        return LU_ERR_BAD_PAYLOAD;
+    }
 }
 
 lu_status_t lu_unpack_frame(const uint8_t * frame, size_t frame_len, lu_frame_t * out)
@@ -139,18 +242,18 @@ lu_status_t lu_unpack_frame(const uint8_t * frame, size_t frame_len, lu_frame_t 
         return LU_ERR_VERSION;
     }
 
-    payload_len  = get_u16_le(&frame[17]);
+    payload_len  = get_u16_le(&frame[29]);
     expected_len = LU_MIN_FRAME_SIZE + payload_len;
     if (payload_len > LU_MAX_PAYLOAD_SIZE || frame_len != expected_len)
     {
         return LU_ERR_BAD_LENGTH;
     }
-    if (frame[21u + payload_len] != LU_EOF0 || frame[22u + payload_len] != LU_EOF1)
+    if (frame[33u + payload_len] != LU_EOF0 || frame[34u + payload_len] != LU_EOF1)
     {
         return LU_ERR_BAD_EOF;
     }
 
-    expected_crc = get_u16_le(&frame[19u + payload_len]);
+    expected_crc = get_u16_le(&frame[31u + payload_len]);
     actual_crc   = lu_crc16_ccitt_false(&frame[2], LU_CRC_HEADER_SIZE + payload_len);
     if (actual_crc != expected_crc)
     {
@@ -160,11 +263,20 @@ lu_status_t lu_unpack_frame(const uint8_t * frame, size_t frame_len, lu_frame_t 
     out->type        = frame[3];
     out->flags       = frame[4];
     out->seq         = get_u16_le(&frame[5]);
-    out->endpoint    = get_u16_le(&frame[7]);
-    out->cluster     = get_u32_le(&frame[9]);
-    out->id          = get_u32_le(&frame[13]);
+    out->session_id  = get_u32_le(&frame[7]);
+    out->uart_device_id = get_u32_le(&frame[11]);
+    out->endpoint    = get_u16_le(&frame[15]);
+    out->binding_version = get_u32_le(&frame[17]);
+    out->cluster     = get_u32_le(&frame[21]);
+    out->id          = get_u32_le(&frame[25]);
     out->payload_len = payload_len;
-    out->payload     = payload_len == 0u ? NULL : &frame[19];
+    out->payload     = payload_len == 0u ? NULL : &frame[31];
+
+    lu_status_t semantic_status = lu_validate_frame_semantics(out);
+    if (semantic_status != LU_OK)
+    {
+        return semantic_status;
+    }
 
     return LU_OK;
 }

@@ -39,6 +39,7 @@ struct DynamicBridgeDeviceParams
     const char * name;
     const char * location;
     const char * uniqueId;
+    chip::EndpointId requestedEndpoint = chip::kInvalidEndpointId;
 };
 
 CHIP_ERROR InitBridgeApp();

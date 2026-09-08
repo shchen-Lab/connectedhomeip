@@ -1,0 +1,17 @@
+[
+  {
+    "capability_flags": 23,
+    "color_mode": 2,
+    "color_temperature": 320,
+    "device_type": 17,
+    "hue": 80,
+    "level": 128,
+    "on": 1,
+    "online": true,
+    "pending_remove": false,
+    "saturation": 140,
+    "state_valid": true,
+    "state_version": 3,
+    "uart_device_id": 2
+  }
+]

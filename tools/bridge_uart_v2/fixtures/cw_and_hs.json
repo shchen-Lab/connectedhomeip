@@ -1,0 +1,12 @@
+[
+  {
+    "uart_device_id": 1,
+    "device_type": 16,
+    "capability_flags": 19
+  },
+  {
+    "uart_device_id": 2,
+    "device_type": 17,
+    "capability_flags": 23
+  }
+]
