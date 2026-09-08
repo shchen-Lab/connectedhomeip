@@ -55,6 +55,7 @@ python3 tools/bridge_uart_v2/run_smoke.py \
 ## 尚未验收
 
 - 2026-09-08 chip-tool 重配网后，Endpoint 3/4 的 Descriptor、Reachable、FeatureMap/ColorCapabilities、OnOff/Level/HS/CT 控制闭环已通过；模拟 MCU Remove 后 Endpoint 3 返回 UNSUPPORTED_ENDPOINT、Endpoint 4 仍在线。证据见 test_results/bridge_uart_v2/phone-20260908-02/。
+- 补充验证：空清单导致保留 Endpoint 4 的 chip-tool Reachable 明确返回 FALSE；证据见 test_results/bridge_uart_v2/phone-20260908-03/results.md。
 
 - 新固件构建、用户烧录，以及手机测试计划 P00–P12 适用项。
 - 断电期间 KVS 写入原子性及 PENDING_ADD/PENDING_REMOVE 恢复。
