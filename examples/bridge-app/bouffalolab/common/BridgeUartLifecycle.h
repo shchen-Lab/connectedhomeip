@@ -48,16 +48,25 @@ public:
     void HeartbeatResponse(uint32_t nowMs);
 
     Phase GetPhase() const { return mPhase; }
+
     uint32_t GetSessionId() const { return mSessionId; }
+
     uint32_t GetDeviceListVersion() const { return mDeviceListVersion; }
+
     uint16_t GetListCount() const { return mListCount; }
+
     uint8_t GetRetryCount() const { return mRetries; }
+
     uint8_t GetHeartbeatMisses() const { return mHeartbeatMisses; }
+
     const ListEntry * GetListEntries() const { return mEntries; }
+
     void BindingsComplete()
     {
         if (mPhase == Phase::Binding)
+        {
             mPhase = Phase::Ready;
+        }
     }
 
 private:

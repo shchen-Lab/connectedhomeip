@@ -85,7 +85,8 @@ void BridgeDevice::SetHue(uint8_t hue)
 void BridgeDevice::SetSaturation(uint8_t saturation)
 {
     VerifyOrReturn(HasHueSaturation());
-    const bool changed = (mSaturation != saturation || mColorMode != kColorModeHueSaturation || mEnhancedColorMode != kColorModeHueSaturation);
+    const bool changed =
+        (mSaturation != saturation || mColorMode != kColorModeHueSaturation || mEnhancedColorMode != kColorModeHueSaturation);
     mSaturation        = saturation;
     mColorMode         = kColorModeHueSaturation;
     mEnhancedColorMode = kColorModeHueSaturation;
@@ -108,7 +109,8 @@ void BridgeDevice::SetHueSaturationState(uint8_t hue, uint8_t saturation)
 {
     VerifyOrReturn(HasHueSaturation());
     bool changed = mHue != hue || mSaturation != saturation || mColorMode != kColorModeHueSaturation;
-    mHue = hue; mSaturation = saturation;
+    mHue         = hue;
+    mSaturation  = saturation;
     mColorMode = mEnhancedColorMode = kColorModeHueSaturation;
     NotifyIfChanged(changed, kChanged_Color);
 }
@@ -127,7 +129,8 @@ void BridgeDevice::SetCurrentY(uint16_t currentY)
 void BridgeDevice::SetColorTemperatureMireds(uint16_t temperatureMireds)
 {
     VerifyOrReturn(HasColorTemperature());
-    const bool changed      = (mColorTemperatureMireds != temperatureMireds || mColorMode != kColorModeColorTemperature || mEnhancedColorMode != kColorModeColorTemperature);
+    const bool changed      = (mColorTemperatureMireds != temperatureMireds || mColorMode != kColorModeColorTemperature ||
+                               mEnhancedColorMode != kColorModeColorTemperature);
     mColorTemperatureMireds = temperatureMireds;
     mColorMode              = kColorModeColorTemperature;
     mEnhancedColorMode      = kColorModeColorTemperature;

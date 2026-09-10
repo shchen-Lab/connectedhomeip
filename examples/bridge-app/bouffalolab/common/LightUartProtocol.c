@@ -94,8 +94,8 @@ uint32_t lu_crc32_iso_hdlc(const uint8_t * data, size_t len)
 }
 
 lu_status_t lu_pack_frame(uint8_t type, uint8_t flags, uint16_t seq, uint32_t session_id, uint32_t uart_device_id,
-                          uint16_t endpoint, uint32_t binding_version, uint32_t cluster, uint32_t id,
-                          const uint8_t * payload, uint16_t payload_len, uint8_t * out, size_t out_cap, size_t * out_len)
+                          uint16_t endpoint, uint32_t binding_version, uint32_t cluster, uint32_t id, const uint8_t * payload,
+                          uint16_t payload_len, uint8_t * out, size_t out_cap, size_t * out_len)
 {
     const size_t total_len = LU_MIN_FRAME_SIZE + payload_len;
     uint16_t crc;
@@ -260,17 +260,17 @@ lu_status_t lu_unpack_frame(const uint8_t * frame, size_t frame_len, lu_frame_t 
         return LU_ERR_CRC;
     }
 
-    out->type        = frame[3];
-    out->flags       = frame[4];
-    out->seq         = get_u16_le(&frame[5]);
-    out->session_id  = get_u32_le(&frame[7]);
-    out->uart_device_id = get_u32_le(&frame[11]);
-    out->endpoint    = get_u16_le(&frame[15]);
+    out->type            = frame[3];
+    out->flags           = frame[4];
+    out->seq             = get_u16_le(&frame[5]);
+    out->session_id      = get_u32_le(&frame[7]);
+    out->uart_device_id  = get_u32_le(&frame[11]);
+    out->endpoint        = get_u16_le(&frame[15]);
     out->binding_version = get_u32_le(&frame[17]);
-    out->cluster     = get_u32_le(&frame[21]);
-    out->id          = get_u32_le(&frame[25]);
-    out->payload_len = payload_len;
-    out->payload     = payload_len == 0u ? NULL : &frame[31];
+    out->cluster         = get_u32_le(&frame[21]);
+    out->id              = get_u32_le(&frame[25]);
+    out->payload_len     = payload_len;
+    out->payload         = payload_len == 0u ? NULL : &frame[31];
 
     lu_status_t semantic_status = lu_validate_frame_semantics(out);
     if (semantic_status != LU_OK)

@@ -121,8 +121,9 @@ void ForwardCommand(CommandHandlerInterface::HandlerContext & context, const cha
     }
     else
     {
-        context.mCommandHandler.AddStatus(context.mRequestPath, err == CHIP_ERROR_BUSY ?
-            Protocols::InteractionModel::Status::Busy : Protocols::InteractionModel::Status::Failure);
+        context.mCommandHandler.AddStatus(context.mRequestPath,
+                                          err == CHIP_ERROR_BUSY ? Protocols::InteractionModel::Status::Busy
+                                                                 : Protocols::InteractionModel::Status::Failure);
         ChipLogError(Zcl, "Failed to forward bridge UART command %s: %" CHIP_ERROR_FORMAT, name, err.Format());
     }
 
@@ -200,8 +201,9 @@ public:
         context.SetCommandHandled();
         if (!SupportsCommand(*device, context.mRequestPath.mClusterId, context.mRequestPath.mCommandId))
         {
-            context.mCommandHandler.AddStatus(context.mRequestPath, device->IsReachable() ?
-                Protocols::InteractionModel::Status::UnsupportedCommand : Protocols::InteractionModel::Status::Failure);
+            context.mCommandHandler.AddStatus(context.mRequestPath,
+                                              device->IsReachable() ? Protocols::InteractionModel::Status::UnsupportedCommand
+                                                                    : Protocols::InteractionModel::Status::Failure);
             return;
         }
 

@@ -102,7 +102,9 @@ bool BridgeUartLifecycle::AddListEntry(uint32_t transactionId, const ListEntry &
     uint8_t bytes[18] = {};
     auto put          = [&](unsigned offset, uint32_t value, unsigned count) {
         for (unsigned i = 0; i < count; ++i)
+        {
             bytes[offset + i] = static_cast<uint8_t>(value >> (8 * i));
+        }
     };
     put(0, transactionId, 4);
     put(4, entry.deviceId, 4);
@@ -114,7 +116,9 @@ bool BridgeUartLifecycle::AddListEntry(uint32_t transactionId, const ListEntry &
     {
         mComputedChecksum ^= byte;
         for (unsigned bit = 0; bit < 8; ++bit)
+        {
             mComputedChecksum = (mComputedChecksum >> 1) ^ ((mComputedChecksum & 1u) ? 0xEDB88320u : 0u);
+        }
     }
     mEntries[mListCount++] = entry;
     return true;

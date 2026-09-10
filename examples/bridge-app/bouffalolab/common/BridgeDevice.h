@@ -34,21 +34,20 @@ public:
     static constexpr uint32_t kColorFeatureHueSaturation    = 0x00000001;
     static constexpr uint32_t kColorFeatureXY               = 0x00000008;
     static constexpr uint32_t kColorFeatureColorTemperature = 0x00000010;
-    static constexpr uint32_t kExtendedColorFeatureMap =
-        kColorFeatureHueSaturation | kColorFeatureColorTemperature;
+    static constexpr uint32_t kExtendedColorFeatureMap      = kColorFeatureHueSaturation | kColorFeatureColorTemperature;
 
     static constexpr uint8_t kColorModeHueSaturation    = 0;
-    static constexpr uint8_t kColorModeCurrentXy       = 1;
+    static constexpr uint8_t kColorModeCurrentXy        = 1;
     static constexpr uint8_t kColorModeColorTemperature = 2;
 
     enum Changed_t
     {
-        kChanged_Reachable = 0x01,
+        kChanged_Reachable  = 0x01,
         kChanged_OnOffState = 0x02,
-        kChanged_Location  = 0x04,
-        kChanged_Name      = 0x08,
-        kChanged_Level     = 0x10,
-        kChanged_Color     = 0x20,
+        kChanged_Location   = 0x04,
+        kChanged_Name       = 0x08,
+        kChanged_Level      = 0x10,
+        kChanged_Color      = 0x20,
     };
 
     using ChangeCallback = void (*)(BridgeDevice * device, Changed_t changeMask);
@@ -57,29 +56,51 @@ public:
                  uint32_t colorFeatures);
 
     bool IsOn() const { return mOn; }
+
     bool IsReachable() const { return mReachable; }
+
     bool IsLighting() const { return mIsLighting; }
+
     bool HasLevel() const { return mHasLevel; }
+
     bool HasColor() const { return mColorFeatures != 0; }
+
     bool HasHueSaturation() const { return (mColorFeatures & kColorFeatureHueSaturation) != 0; }
+
     bool HasXY() const { return (mColorFeatures & kColorFeatureXY) != 0; }
+
     bool HasColorTemperature() const { return (mColorFeatures & kColorFeatureColorTemperature) != 0; }
+
     uint32_t GetColorFeatures() const { return mColorFeatures; }
+
     uint8_t GetLevel() const { return mLevel; }
+
     uint8_t GetOnLevel() const { return mOnLevel; }
+
     uint8_t GetHue() const { return mHue; }
+
     uint8_t GetSaturation() const { return mSaturation; }
+
     uint16_t GetCurrentX() const { return mCurrentX; }
+
     uint16_t GetCurrentY() const { return mCurrentY; }
+
     uint8_t GetColorMode() const { return mColorMode; }
+
     uint8_t GetEnhancedColorMode() const { return mEnhancedColorMode; }
+
     uint16_t GetColorTemperatureMireds() const { return mColorTemperatureMireds; }
+
     uint16_t GetStartUpColorTemperatureMireds() const { return mStartUpColorTemperatureMireds; }
+
     const char * GetName() const { return mName; }
+
     const char * GetUniqueId() const { return mUniqueId; }
+
     chip::EndpointId GetEndpointId() const { return mEndpointId; }
 
     void SetEndpointId(chip::EndpointId endpoint) { mEndpointId = endpoint; }
+
     void SetChangeCallback(ChangeCallback callback) { mChangeCallback = callback; }
 
     void SetOnOff(bool on);

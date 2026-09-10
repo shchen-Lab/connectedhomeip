@@ -604,9 +604,9 @@ CHIP_ERROR AddDynamicBridgeDeviceLocked(const DynamicBridgeDeviceParams & params
     device.SetReachable(false);
     device.SetChangeCallback(HandleDeviceStatusChanged);
 
-    CHIP_ERROR err = AddDeviceEndpoint(index, device, config->endpointType,
-                                       Span<const EmberAfDeviceType>(config->deviceTypes, config->deviceTypeCount),
-                                       Span<DataVersion>(slot.dataVersions), kAggregatorEndpointId, endpoint, params.requestedEndpoint);
+    CHIP_ERROR err = AddDeviceEndpoint(
+        index, device, config->endpointType, Span<const EmberAfDeviceType>(config->deviceTypes, config->deviceTypeCount),
+        Span<DataVersion>(slot.dataVersions), kAggregatorEndpointId, endpoint, params.requestedEndpoint);
     if (err != CHIP_NO_ERROR)
     {
         device.SetChangeCallback(nullptr);

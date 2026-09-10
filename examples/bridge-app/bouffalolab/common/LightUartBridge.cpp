@@ -8,6 +8,7 @@
 #include <task.h>
 
 using namespace chip;
+
 namespace {
 constexpr size_t kBufferSize = LU_MIN_FRAME_SIZE + LU_MAX_PAYLOAD_SIZE;
 TaskHandle_t rxTask;
@@ -30,11 +31,13 @@ void Resync(size_t & length)
     }
     length = 0;
 }
+
 void Consume(size_t & length, size_t count)
 {
     std::memmove(buffer, buffer + count, length - count);
     length -= count;
 }
+
 void RxTask(void *)
 {
     size_t length    = 0;
@@ -55,9 +58,13 @@ void RxTask(void *)
         }
         LightUartPortLogRxDropsIfChanged();
         if (!length)
+        {
             start = xTaskGetTickCount();
+        }
         if (length == sizeof(buffer))
+        {
             Resync(length);
+        }
         buffer[length++] = byte;
         while (length)
         {
@@ -68,7 +75,9 @@ void RxTask(void *)
                 continue;
             }
             if (length < LU_HEADER_SIZE)
+            {
                 break;
+            }
             size_t payload = size_t(buffer[29]) | size_t(buffer[30]) << 8;
             if (buffer[2] != LU_VERSION || payload > LU_MAX_PAYLOAD_SIZE)
             {
@@ -78,14 +87,18 @@ void RxTask(void *)
             }
             size_t total = LU_MIN_FRAME_SIZE + payload;
             if (length < total)
+            {
                 break;
+            }
             lu_frame_t frame;
             lu_status_t status = lu_unpack_frame(buffer, total, &frame);
             if (status == LU_OK)
             {
                 CHIP_ERROR err = BridgeUartPostFrame(frame);
                 if (err != CHIP_NO_ERROR)
+                {
                     ChipLogError(Zcl, "UART event rejected: %" CHIP_ERROR_FORMAT, err.Format());
+                }
                 Consume(length, total);
             }
             else if (status == LU_ERR_BAD_PAYLOAD || status == LU_ERR_RESERVED_BITS)
@@ -110,23 +123,28 @@ void RxTask(void *)
 CHIP_ERROR InitLightUartBridge()
 {
     if (rxTask)
+    {
         return CHIP_NO_ERROR;
+    }
     ReturnErrorOnFailure(InitLightUartPort());
     rxTask = xTaskCreateStatic(RxTask, "light_uart", sizeof(taskStack) / sizeof(taskStack[0]), nullptr, 2, taskStack, &taskStorage);
     VerifyOrReturnError(rxTask, CHIP_ERROR_NO_MEMORY);
     LightUartPortSetRxTaskHandle(rxTask);
     return CHIP_NO_ERROR;
 }
+
 CHIP_ERROR LightUartBridgeProcessFrame(const uint8_t * bytes, uint16_t length)
 {
     lu_frame_t frame;
     VerifyOrReturnError(lu_unpack_frame(bytes, length, &frame) == LU_OK, CHIP_ERROR_INVALID_ARGUMENT);
     return BridgeUartPostFrame(frame);
 }
+
 CHIP_ERROR LightUartBridgeSendCommand(uint16_t endpoint, uint32_t cluster, uint32_t id, const uint8_t * payload, uint16_t size)
 {
     return BridgeUartRequest(endpoint, cluster, id, payload, size);
 }
+
 CHIP_ERROR LightUartBridgeSendReadAttribute(uint16_t endpoint, uint32_t cluster, uint32_t id)
 {
     return BridgeUartRequest(endpoint, cluster, id, nullptr, 0, true);
