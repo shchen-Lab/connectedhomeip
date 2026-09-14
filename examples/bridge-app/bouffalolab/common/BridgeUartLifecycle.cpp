@@ -81,6 +81,19 @@ bool BridgeUartLifecycle::BeginList(uint32_t transactionId, uint32_t deviceListV
     return true;
 }
 
+void BridgeUartLifecycle::BeginListRefresh()
+{
+    mListTransactionId = 0;
+    mListChecksum      = 0;
+    mListStarted       = false;
+    mListInvalid       = false;
+    mListCountExpected = 0;
+    mListCount         = 0;
+    mPending           = {};
+    mRetries           = 0;
+    mPhase             = Phase::Listing;
+}
+
 bool BridgeUartLifecycle::AddListEntry(uint32_t transactionId, const ListEntry & entry)
 {
     if (mPhase != Phase::Listing || !mListStarted || mListInvalid || transactionId != mListTransactionId ||

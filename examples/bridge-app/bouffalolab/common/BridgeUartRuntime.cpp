@@ -65,6 +65,7 @@ struct Record
     bool listedRemoved      = false;
     bool needsBind          = false;
     bool syncWaiting        = false;
+    bool syncExhausted      = false;
     uint8_t syncAttempts    = 0;
     uint32_t syncDeadline   = 0;
     uint32_t syncRetryAt    = 0;
@@ -230,7 +231,8 @@ CHIP_ERROR CreateEndpoint(Record & r, bool restore)
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
-    std::snprintf(name, sizeof(name), "UART-%08lx", static_cast<unsigned long>(r.id));
+    const char * typeName = r.type == 0x10 ? "Color Temperature Light" : "Extended Color Light";
+    std::snprintf(name, sizeof(name), "%s %lu", typeName, static_cast<unsigned long>(r.id));
     std::snprintf(unique, sizeof(unique), "bridge-uart-%08lx", static_cast<unsigned long>(r.id));
     DynamicBridgeDeviceParams params{ deviceType, name, "", unique };
     if (restore)
@@ -400,6 +402,7 @@ void Disconnect()
         Reachable(r, false);
         r.bound = r.online = r.synced = r.needsBind = false;
         r.syncWaiting = false;
+        r.syncExhausted = false;
         r.syncAttempts = 0;
         r.syncDeadline = 0;
         r.syncRetryAt = 0;
@@ -438,6 +441,12 @@ void RequestList()
     }
 }
 
+void RefreshList()
+{
+    lifecycle.BeginListRefresh();
+    RequestList();
+}
+
 void NextBind()
 {
     if (pending.active || storageFailed)
@@ -471,7 +480,11 @@ void NextBind()
             constexpr uint8_t kMaxSyncAttempts = 3;
             if (r.syncAttempts >= kMaxSyncAttempts)
             {
-                ChipLogError(Zcl, "UART re-sync exhausted dev=%lu ep=%u", static_cast<unsigned long>(r.id), r.endpoint);
+                if (!r.syncExhausted)
+                {
+                    ChipLogError(Zcl, "UART re-sync exhausted dev=%lu ep=%u", static_cast<unsigned long>(r.id), r.endpoint);
+                    r.syncExhausted = true;
+                }
                 r.syncRetryAt = Now() + 10000;
                 continue;
             }
@@ -662,6 +675,7 @@ uint8_t State(Packet & p, bool snapshot)
         r->mask   = mask;
         r->synced = true;
         r->syncWaiting  = false;
+        r->syncExhausted = false;
         r->syncAttempts = 0;
         r->syncDeadline = 0;
         r->syncRetryAt  = 0;
@@ -743,6 +757,13 @@ void ProcessImpl(Packet & p)
             if (valid)
             {
                 pending.active = false;
+                for (auto & r : records)
+                {
+                    if (r.id)
+                    {
+                        r.listedRemoved = true;
+                    }
+                }
                 for (unsigned i = 0; i < lifecycle.GetListCount(); ++i)
                 {
                     const auto & e = lifecycle.GetListEntries()[i];
@@ -757,7 +778,7 @@ void ProcessImpl(Packet & p)
                         continue;
                     }
                     uint8_t status = Add(e.deviceId, e.deviceType, e.capabilityFlags, e.stateFlags, e.stateVersion, r);
-                    if (!status && existing && AllocateBinding(*r) != CHIP_NO_ERROR)
+                    if (!status && existing && !r->bound && AllocateBinding(*r) != CHIP_NO_ERROR)
                     {
                         status = LU_STATUS_INTERNAL_ERROR;
                     }
@@ -768,6 +789,21 @@ void ProcessImpl(Packet & p)
                             r->needsBind = false;
                         }
                         ChipLogError(Zcl, "UART list device=%lu status=%u", static_cast<unsigned long>(e.deviceId), status);
+                    }
+                    else
+                    {
+                        r->listedRemoved = false;
+                    }
+                }
+                for (auto & r : records)
+                {
+                    if (r.id && r.listedRemoved)
+                    {
+                        r.online        = false;
+                        r.synced        = false;
+                        r.syncWaiting   = false;
+                        r.syncExhausted = false;
+                        Reachable(r, false);
                     }
                 }
                 NextBind();
@@ -878,10 +914,16 @@ void ProcessImpl(Packet & p)
             {
                 ++heartbeatMisses;
             }
-            if (heartbeatMisses >= 3 || (!status && U32(p.payload + 5) != lifecycle.GetDeviceListVersion()))
+            if (heartbeatMisses >= 3)
             {
                 Disconnect();
                 nextProbe = Now();
+                return;
+            }
+            if (!status && U32(p.payload + 5) != lifecycle.GetDeviceListVersion())
+            {
+                pending.active = false;
+                RefreshList();
                 return;
             }
         }
@@ -1002,6 +1044,7 @@ void ProcessImpl(Packet & p)
             r->online = online;
             r->synced = false;
             r->syncWaiting = false;
+            r->syncExhausted = false;
             r->syncAttempts = 0;
             r->syncDeadline = 0;
             r->syncRetryAt = 0;

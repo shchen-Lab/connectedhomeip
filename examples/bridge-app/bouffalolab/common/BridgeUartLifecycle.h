@@ -39,6 +39,7 @@ public:
     bool AcceptHelloResponse(uint16_t sequence, uint16_t expectedSequence, uint32_t sessionId, uint8_t status,
                              uint32_t deviceListVersion);
     bool BeginList(uint32_t transactionId, uint32_t deviceListVersion, uint16_t entryCount, uint16_t entrySize, uint32_t checksum);
+    void BeginListRefresh();
     bool AddListEntry(uint32_t transactionId, const ListEntry & entry);
     bool FinishList(uint32_t transactionId, uint16_t receivedCount, uint32_t checksum, uint8_t status);
 

@@ -1,0 +1,32 @@
+[
+  {
+    "capability_flags": 19,
+    "color_mode": 2,
+    "color_temperature": 250,
+    "device_type": 16,
+    "hue": 0,
+    "level": 128,
+    "on": 1,
+    "online": true,
+    "pending_remove": false,
+    "saturation": 0,
+    "state_valid": true,
+    "state_version": 3,
+    "uart_device_id": 1
+  },
+  {
+    "capability_flags": 23,
+    "color_mode": 0,
+    "color_temperature": 250,
+    "device_type": 17,
+    "hue": 0,
+    "level": 128,
+    "on": 1,
+    "online": true,
+    "pending_remove": false,
+    "saturation": 0,
+    "state_valid": true,
+    "state_version": 1,
+    "uart_device_id": 3
+  }
+]
