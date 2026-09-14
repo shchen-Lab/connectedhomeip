@@ -22,6 +22,7 @@
 
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
+#include <app-common/zap-generated/callback.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/reporting/reporting.h>
 #include <app/util/attribute-storage.h>
@@ -261,6 +262,17 @@ const EmberAfDeviceType gBridgedPlugDeviceTypes[] = {
 void CallReportingCallback(intptr_t closure)
 {
     auto path = reinterpret_cast<ConcreteAttributePath *>(closure);
+
+    ChipLogProgress(DeviceLayer,
+                    "Attribute changed ep=%u cluster=0x%08" PRIx32 " attr=0x%08" PRIx32,
+                    path->mEndpointId, path->mClusterId, path->mAttributeId);
+
+    if (path->mClusterId == BridgedDeviceBasicInformation::Id)
+    {
+        ChipLogProgress(DeviceLayer, "Reachable callback ep=%u", path->mEndpointId);
+        MatterBridgedDeviceBasicInformationClusterServerAttributeChangedCallback(*path);
+    }
+
     MatterReportingAttributeChangeCallback(*path);
     Platform::Delete(path);
 }
@@ -316,6 +328,26 @@ void HandleDeviceStatusChanged(BridgeDevice * device, BridgeDevice::Changed_t it
         ScheduleReportingCallback(device, ColorControl::Id, ColorControl::Attributes::EnhancedColorMode::Id);
     }
 
+    if (itemChangedMask & BridgeDevice::kChanged_LevelOptions)
+    {
+        ScheduleReportingCallback(device, LevelControl::Id, LevelControl::Attributes::Options::Id);
+    }
+
+    if (itemChangedMask & BridgeDevice::kChanged_ColorOptions)
+    {
+        ScheduleReportingCallback(device, ColorControl::Id, ColorControl::Attributes::Options::Id);
+    }
+
+    if (itemChangedMask & BridgeDevice::kChanged_OnLevel)
+    {
+        ScheduleReportingCallback(device, LevelControl::Id, LevelControl::Attributes::OnLevel::Id);
+    }
+
+    if (itemChangedMask & BridgeDevice::kChanged_StartUpColorTemperature)
+    {
+        ScheduleReportingCallback(device, ColorControl::Id, ColorControl::Attributes::StartUpColorTemperatureMireds::Id);
+    }
+
     if (itemChangedMask & BridgeDevice::kChanged_Name)
     {
         ScheduleReportingCallback(device, BridgedDeviceBasicInformation::Id,
@@ -341,8 +373,10 @@ CHIP_ERROR AddDeviceEndpoint(uint16_t index, BridgeDevice & device, EmberAfEndpo
         if (err == CHIP_NO_ERROR)
         {
             endpoint = gCurrentEndpointId;
-            ChipLogProgress(DeviceLayer, "Added device %s to dynamic endpoint %u (index=%u)", device.GetName(), endpoint,
-                            static_cast<unsigned>(index));
+            ChipLogProgress(DeviceLayer, "Added device %s (uniqueId=%s type=0x%04lx) to dynamic endpoint %u (index=%u%s)",
+                            device.GetName(), device.GetUniqueId(),
+                            static_cast<unsigned long>(deviceTypeList[0].deviceTypeId), endpoint, static_cast<unsigned>(index),
+                            restoring ? ", restored" : "");
             return CHIP_NO_ERROR;
         }
 
@@ -553,7 +587,19 @@ BridgeDevice * FindBridgeDevice(EndpointId endpoint)
         return nullptr;
     }
     auto & device = gDynamicDeviceSlots[index].device;
-    return device.has_value() ? &device.value() : nullptr;
+    if (!device.has_value())
+    {
+        return nullptr;
+    }
+    if (device->GetEndpointId() != endpoint)
+    {
+        // The slot/endpoint pairing changed after a remove+add; refuse to map
+        // stale UART traffic onto the wrong device.
+        ChipLogError(DeviceLayer, "Dynamic endpoint %u maps to slot %u holding endpoint %u, rejecting", endpoint,
+                     static_cast<unsigned>(index), device->GetEndpointId());
+        return nullptr;
+    }
+    return &device.value();
 }
 
 CHIP_ERROR InitBridgeApp()
@@ -615,6 +661,8 @@ CHIP_ERROR AddDynamicBridgeDeviceLocked(const DynamicBridgeDeviceParams & params
         return err;
     }
 
+    ChipLogProgress(DeviceLayer, "Dynamic endpoint created: endpoint=%u device=%s reachable=false, waiting for first snapshot",
+                    endpoint, device.GetName());
     return CHIP_NO_ERROR;
 }
 
@@ -631,8 +679,8 @@ CHIP_ERROR RemoveDynamicBridgeDeviceLocked(EndpointId endpoint)
     VerifyOrReturnError(removedEndpoint == endpoint, CHIP_ERROR_INTERNAL);
 
     BridgeDevice & device = slot.device.value();
-    ChipLogProgress(DeviceLayer, "Removed dynamic device %s from dynamic endpoint %u (index=%u)", device.GetName(), endpoint,
-                    static_cast<unsigned>(index));
+    ChipLogProgress(DeviceLayer, "Removed dynamic device %s (uniqueId=%s) from dynamic endpoint %u (index=%u)", device.GetName(),
+                    device.GetUniqueId(), endpoint, static_cast<unsigned>(index));
     device.SetChangeCallback(nullptr);
     device.SetReachable(false);
     device.SetEndpointId(kInvalidEndpointId);

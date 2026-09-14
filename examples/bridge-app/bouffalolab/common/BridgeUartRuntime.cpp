@@ -64,6 +64,10 @@ struct Record
     bool synced             = false;
     bool listedRemoved      = false;
     bool needsBind          = false;
+    bool syncWaiting        = false;
+    uint8_t syncAttempts    = 0;
+    uint32_t syncDeadline   = 0;
+    uint32_t syncRetryAt    = 0;
     uint8_t values[4]       = {};
     uint16_t versionFields  = 0;
 };
@@ -212,11 +216,23 @@ CHIP_ERROR CreateEndpoint(Record & r, bool restore)
 {
     char name[32];
     char unique[32];
+    DynamicBridgeDeviceType deviceType;
+
+    switch (r.type)
+    {
+    case 0x10:
+        deviceType = DynamicBridgeDeviceType::kColorTemperatureLight;
+        break;
+    case 0x11:
+        deviceType = DynamicBridgeDeviceType::kExtendedColorLight;
+        break;
+    default:
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
+
     std::snprintf(name, sizeof(name), "UART-%08lx", static_cast<unsigned long>(r.id));
     std::snprintf(unique, sizeof(unique), "bridge-uart-%08lx", static_cast<unsigned long>(r.id));
-    DynamicBridgeDeviceParams params{ r.type == 0x10 ? DynamicBridgeDeviceType::kColorTemperatureLight
-                                                     : DynamicBridgeDeviceType::kExtendedColorLight,
-                                      name, "", unique };
+    DynamicBridgeDeviceParams params{ deviceType, name, "", unique };
     if (restore)
     {
         params.requestedEndpoint = r.endpoint;
@@ -284,6 +300,9 @@ void FinishCommand(Status status)
 {
     if (auto * handler = commandHandle.Get())
     {
+        ChipLogProgress(Zcl, "UART command finished ep=%u cluster=0x%08lx cmd=0x%08lx status=0x%02x", commandPath.mEndpointId,
+                        static_cast<unsigned long>(commandPath.mClusterId), static_cast<unsigned long>(commandPath.mCommandId),
+                        static_cast<unsigned>(status));
         handler->AddStatus(commandPath, status);
     }
     commandHandle.Release();
@@ -380,6 +399,10 @@ void Disconnect()
         }
         Reachable(r, false);
         r.bound = r.online = r.synced = r.needsBind = false;
+        r.syncWaiting = false;
+        r.syncAttempts = 0;
+        r.syncDeadline = 0;
+        r.syncRetryAt = 0;
         r.listedRemoved                             = false;
         r.version                                   = 0;
         r.versionFields                             = 0;
@@ -437,6 +460,32 @@ void NextBind()
             Disconnect();
         }
         return;
+    }
+    // A device that came back online but has not applied a fresh snapshot yet
+    // must be re-synced; otherwise it would stay reported as unreachable.
+    for (auto & r : records)
+    {
+        if (r.id && r.bound && r.online && !r.synced && !r.syncWaiting &&
+            static_cast<int32_t>(Now() - r.syncRetryAt) >= 0)
+        {
+            constexpr uint8_t kMaxSyncAttempts = 3;
+            if (r.syncAttempts >= kMaxSyncAttempts)
+            {
+                ChipLogError(Zcl, "UART re-sync exhausted dev=%lu ep=%u", static_cast<unsigned long>(r.id), r.endpoint);
+                r.syncRetryAt = Now() + 10000;
+                continue;
+            }
+            ++r.syncAttempts;
+            r.syncWaiting  = true;
+            r.syncDeadline = Now() + 1000;
+            ChipLogProgress(Zcl, "UART re-sync dev=%lu ep=%u version=%lu", static_cast<unsigned long>(r.id), r.endpoint,
+                            static_cast<unsigned long>(r.version));
+            if (Start(LU_MSG_DEVICE_STATE_REQUEST, &r, nullptr, 0) != CHIP_NO_ERROR)
+            {
+                Disconnect();
+            }
+            return;
+        }
     }
     lifecycle.BindingsComplete();
 }
@@ -612,6 +661,10 @@ uint8_t State(Packet & p, bool snapshot)
     {
         r->mask   = mask;
         r->synced = true;
+        r->syncWaiting  = false;
+        r->syncAttempts = 0;
+        r->syncDeadline = 0;
+        r->syncRetryAt  = 0;
     }
     if (mask & 1)
     {
@@ -633,6 +686,9 @@ uint8_t State(Packet & p, bool snapshot)
     {
         Reachable(*r, true);
     }
+    ChipLogProgress(Zcl, "UART state applied %s ep=%u dev=%lu version=%lu mask=%04x values=%02x %02x %02x %02x",
+                    snapshot ? "snapshot" : "report", f.endpoint, static_cast<unsigned long>(f.uart_device_id),
+                    static_cast<unsigned long>(version), mask, values[0], values[1], values[2], values[3]);
     return LU_STATUS_OK;
 }
 
@@ -728,6 +784,13 @@ void ProcessImpl(Packet & p)
         uint8_t status     = State(p, true);
         uint8_t applied[4] = {};
         Record * r         = Find(f.uart_device_id);
+        if (status)
+        {
+            ChipLogError(Zcl, "UART snapshot rejected status=%u ep=%u dev=%lu version=%lu expected=%lu", status, f.endpoint,
+                         static_cast<unsigned long>(f.uart_device_id),
+                         f.payload_len >= 4 ? static_cast<unsigned long>(U32(p.payload)) : 0ul,
+                         r ? static_cast<unsigned long>(r->version) : 0ul);
+        }
         if (r)
         {
             Put(applied, r->version, 4);
@@ -820,6 +883,24 @@ void ProcessImpl(Packet & p)
                 Disconnect();
                 nextProbe = Now();
                 return;
+            }
+        }
+        else if (pending.packet.frame.type == LU_MSG_DEVICE_STATE_REQUEST)
+        {
+            Record * r = Find(f.uart_device_id);
+            if (r)
+            {
+                if (status == LU_STATUS_OK)
+                {
+                    r->syncDeadline = Now() + 1000;
+                    ChipLogProgress(Zcl, "UART re-sync response OK dev=%lu; waiting for snapshot", static_cast<unsigned long>(r->id));
+                }
+                else
+                {
+                    r->syncWaiting = false;
+                    r->syncRetryAt = Now() + (r->syncAttempts * 1000);
+                    ChipLogError(Zcl, "UART re-sync response status=%u dev=%lu retryAt=%lu", status, static_cast<unsigned long>(r->id), static_cast<unsigned long>(r->syncRetryAt));
+                }
             }
         }
         pending.active = false;
@@ -920,6 +1001,10 @@ void ProcessImpl(Packet & p)
             }
             r->online = online;
             r->synced = false;
+            r->syncWaiting = false;
+            r->syncAttempts = 0;
+            r->syncDeadline = 0;
+            r->syncRetryAt = 0;
             Reachable(*r, false);
             if (pending.active && pending.packet.frame.uart_device_id == r->id)
             {
@@ -1087,6 +1172,15 @@ void Timer(System::Layer *, void *)
             }
         }
     }
+    for (auto & r : records)
+    {
+        if (r.id && r.syncWaiting && static_cast<int32_t>(now - r.syncDeadline) >= 0)
+        {
+            r.syncWaiting = false;
+            r.syncRetryAt = now + (r.syncAttempts * 1000);
+            ChipLogError(Zcl, "UART re-sync snapshot timeout dev=%lu ep=%u", static_cast<unsigned long>(r.id), r.endpoint);
+        }
+    }
     if (!pending.active && !storageFailed)
     {
         if (!session)
@@ -1184,17 +1278,6 @@ CHIP_ERROR BridgeUartRequest(uint16_t endpoint, uint32_t cluster, uint32_t id, c
         bool supported =
             ((cluster == 6 || cluster == 8) && id == 0) || (cluster == 0x300 && (id == 7 || (r->type == 0x11 && id <= 1)));
         VerifyOrReturnError(supported, CHIP_ERROR_INVALID_ARGUMENT);
-    }
-    if (!read && cluster == 6 && (id == 1 || (id == 2 && r->values[0] == 0)))
-    {
-        auto * device = FindBridgeDevice(endpoint);
-        if (device && device->GetOnLevel() != 0xFF)
-        {
-            uint8_t level = device->GetOnLevel();
-            VerifyOrReturnError(level >= 1 && level <= 254, CHIP_ERROR_INVALID_ARGUMENT);
-            uint8_t target[6] = { 0, level, 0, 0, 0, 0 };
-            return Start(LU_MSG_DOWN_INVOKE_COMMAND, r, target, sizeof(target), 8, 4);
-        }
     }
     return Start(read ? LU_MSG_DOWN_READ_ATTRIBUTE : LU_MSG_DOWN_INVOKE_COMMAND, r, payload, size, cluster, id);
 }

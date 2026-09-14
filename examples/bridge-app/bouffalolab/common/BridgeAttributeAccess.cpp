@@ -150,7 +150,7 @@ Protocols::InteractionModel::Status HandleReadLevelControlAttribute(BridgeDevice
     }
     if (attributeId == Options::Id || attributeId == FeatureMap::Id)
     {
-        return attributeId == Options::Id ? CopyUint8(buffer, maxReadLength, 0)
+        return attributeId == Options::Id ? CopyUint8(buffer, maxReadLength, device->GetLevelOptions())
                                           : CopyUint32(buffer, maxReadLength, kLevelControlLightingFeatureMap);
     }
     if (attributeId == OnLevel::Id)
@@ -202,7 +202,11 @@ Protocols::InteractionModel::Status HandleReadColorControlAttribute(BridgeDevice
     {
         return CopyUint8(buffer, maxReadLength, device->GetEnhancedColorMode());
     }
-    if (attributeId == Options::Id || attributeId == NumberOfPrimaries::Id)
+    if (attributeId == Options::Id)
+    {
+        return CopyUint8(buffer, maxReadLength, device->GetColorOptions());
+    }
+    if (attributeId == NumberOfPrimaries::Id)
     {
         return CopyUint8(buffer, maxReadLength, 0);
     }
@@ -236,7 +240,7 @@ Protocols::InteractionModel::Status HandleReadColorControlAttribute(BridgeDevice
 
 Protocols::InteractionModel::Status HandleWriteOnOffAttribute(BridgeDevice * device, AttributeId attributeId, uint8_t * buffer)
 {
-    VerifyOrReturnError(attributeId == OnOff::Attributes::OnOff::Id && device->IsReachable(),
+    VerifyOrReturnError(attributeId == OnOff::Attributes::OnOff::Id && device->IsReachable() && (*buffer == 0 || *buffer == 1),
                         Protocols::InteractionModel::Status::Failure);
     device->SetOnOff(*buffer == 1);
     return Protocols::InteractionModel::Status::Success;
@@ -248,16 +252,20 @@ Protocols::InteractionModel::Status HandleWriteLevelControlAttribute(BridgeDevic
     VerifyOrReturnError(device->HasLevel() && device->IsReachable(), Protocols::InteractionModel::Status::Failure);
     if (attributeId == LevelControl::Attributes::CurrentLevel::Id)
     {
+        VerifyOrReturnError(*buffer >= kMinLevel && *buffer <= kMaxLevel, Protocols::InteractionModel::Status::ConstraintError);
         device->SetLevel(*buffer);
         return Protocols::InteractionModel::Status::Success;
     }
     if (attributeId == LevelControl::Attributes::OnLevel::Id)
     {
+        VerifyOrReturnError(*buffer == chip::app::NumericAttributeTraits<uint8_t>::kNullValue || (*buffer >= kMinLevel && *buffer <= kMaxLevel), Protocols::InteractionModel::Status::ConstraintError);
         device->SetOnLevel(*buffer);
         return Protocols::InteractionModel::Status::Success;
     }
     if (attributeId == LevelControl::Attributes::Options::Id)
     {
+        VerifyOrReturnError((*buffer & ~uint8_t(0x01)) == 0, Protocols::InteractionModel::Status::ConstraintError);
+        device->SetLevelOptions(*buffer);
         return Protocols::InteractionModel::Status::Success;
     }
     return Protocols::InteractionModel::Status::Failure;
@@ -290,16 +298,30 @@ Protocols::InteractionModel::Status HandleWriteColorControlAttribute(BridgeDevic
     }
     if (attributeId == ColorControl::Attributes::ColorTemperatureMireds::Id && device->HasColorTemperature())
     {
-        device->SetColorTemperatureMireds(ReadUint16(buffer));
+        uint16_t temperature = ReadUint16(buffer);
+        VerifyOrReturnError(temperature >= kColorTempMinMireds && temperature <= kColorTempMaxMireds,
+                            Protocols::InteractionModel::Status::ConstraintError);
+        device->SetColorTemperatureMireds(temperature);
         return Protocols::InteractionModel::Status::Success;
     }
     if (attributeId == ColorControl::Attributes::StartUpColorTemperatureMireds::Id && device->HasColorTemperature())
     {
-        device->SetStartUpColorTemperatureMireds(ReadUint16(buffer));
+        uint16_t temperature = ReadUint16(buffer);
+        VerifyOrReturnError(temperature == chip::app::NumericAttributeTraits<uint16_t>::kNullValue ||
+                                (temperature >= kColorTempMinMireds && temperature <= kColorTempMaxMireds),
+                            Protocols::InteractionModel::Status::ConstraintError);
+        device->SetStartUpColorTemperatureMireds(temperature);
         return Protocols::InteractionModel::Status::Success;
     }
-    if (attributeId == ColorControl::Attributes::ColorMode::Id || attributeId == ColorControl::Attributes::EnhancedColorMode::Id ||
-        attributeId == ColorControl::Attributes::Options::Id || attributeId == ColorControl::Attributes::RemainingTime::Id)
+    if (attributeId == ColorControl::Attributes::Options::Id)
+    {
+        VerifyOrReturnError((*buffer & ~uint8_t(0x01)) == 0, Protocols::InteractionModel::Status::ConstraintError);
+        device->SetColorOptions(*buffer);
+        return Protocols::InteractionModel::Status::Success;
+    }
+    if (attributeId == ColorControl::Attributes::ColorMode::Id ||
+        attributeId == ColorControl::Attributes::EnhancedColorMode::Id ||
+        attributeId == ColorControl::Attributes::RemainingTime::Id)
     {
         return Protocols::InteractionModel::Status::Success;
     }

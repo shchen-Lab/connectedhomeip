@@ -18,7 +18,8 @@ from mcu_simulator import (
     Simulator, Device, HELLO_REQUEST, LIST_REQUEST, BIND_REQUEST,
     ADD_NOTIFY, ADD_RESPONSE, REMOVE_NOTIFY, REMOVE_RESPONSE,
     ONLINE_NOTIFY, ONLINE_RESPONSE, OFFLINE_NOTIFY, OFFLINE_RESPONSE,
-    STATE_SNAPSHOT, SNAPSHOT_RESPONSE, COMMAND, BUSY, OK, CAP_CW, CAP_HS_CT,
+    STATE_SNAPSHOT, SNAPSHOT_RESPONSE, COMMAND, STATE_REQUEST, STATE_RESPONSE, BUSY, OK,
+    CAP_CW, CAP_HS_CT,
 )
 from protocol import Frame, ACK_REQUIRED, RESPONSE, ERROR, u8, u16, u32
 
@@ -71,6 +72,9 @@ class Session:
         self.queue = deque()
         self.pending = None
         self.list_ready = False
+        self.defer_snapshots = set()
+        self.injects = {}  # device_id -> (mode, delay_ms); test-only STATE_REQUEST fault injection
+        self.delayed = []  # [(send_at_monotonic, Frame)] scheduled by the event loop
 
     def enqueue(self, frame):
         # Keep the newest unsent snapshot per device; never alter an in-flight request.
@@ -81,6 +85,8 @@ class Session:
 
     def tick(self, now=None):
         now = time.monotonic() if now is None else now
+        while self.delayed and self.delayed[0][0] <= now:
+            self.enqueue(self.delayed.pop(0)[1])
         if self.pending:
             frame, sent, retries = self.pending
             if now - sent >= 0.5:
@@ -125,14 +131,20 @@ class Session:
                 self.sim.binding.pop(frame.device, None)
                 self.sim._save()
             elif frame.message_type == ONLINE_RESPONSE:
-                d = self.sim.devices[frame.device]
-                ep, binding = self.sim.binding[d.uart_device_id]
-                self.enqueue(self.sim._snapshot(d, ep, binding))
+                if frame.device in self.defer_snapshots:
+                    self.defer_snapshots.discard(frame.device)
+                    self.event("snapshot_deferred", device=frame.device)
+                else:
+                    d = self.sim.devices[frame.device]
+                    ep, binding = self.sim.binding[d.uart_device_id]
+                    self.enqueue(self.sim._snapshot(d, ep, binding))
             return
         if frame.message_type == HELLO_REQUEST and not frame.flags & 0x20:
             self.pending = None
             self.queue.clear()
             self.list_ready = False
+            self.injects.clear()
+            self.delayed.clear()
             self.sim.binding.clear()
             self.sim.cache.clear()
             self.sim.list_cache = None
@@ -143,6 +155,8 @@ class Session:
                 replies = self.sim._handle(frame)  # Bind retry returns current state.
             else:
                 replies = self.sim.handle(frame)
+        elif frame.message_type == STATE_REQUEST and frame.device in self.injects:
+            replies = self._state_request_injected(frame)
         else:
             replies = self.sim.handle(frame)
         for response in replies:
@@ -152,8 +166,35 @@ class Session:
                 self.send(response)
         if frame.message_type == LIST_REQUEST and replies:
             self.list_ready = True
-        if frame.message_type in (BIND_REQUEST, COMMAND):
+        if frame.message_type in (BIND_REQUEST, COMMAND, STATE_REQUEST):
             self.event("devices", devices=self.devices())
+
+    def _state_request_injected(self, request):
+        mode, delay_ms = self.injects[request.device]
+        device = self.sim.devices.get(request.device)
+        if mode == "busy":
+            return [self.sim._response(request, STATE_RESPONSE, status=BUSY)]
+        if not device or not device.online or not device.state_valid:
+            return self.sim.handle(request)  # Error paths stay protocol-defined.
+        if mode == "no_snapshot":
+            self.event("inject", device=request.device, mode=mode)
+            return [self.sim._response(request, STATE_RESPONSE, u8(OK))]
+        reply = self.sim._response(request, STATE_RESPONSE, u8(OK))
+        snapshot = self.sim._snapshot(device, request.endpoint, request.binding)
+        payload = bytearray(snapshot.payload)
+        if mode == "old_version":
+            version = int.from_bytes(payload[0:4], "little")
+            payload[0:4] = max(1, version - 1).to_bytes(4, "little")
+            payload[7] = 1 if payload[7] != 1 else 2  # Corrupt level so rejection is observable.
+        elif mode == "conflict":
+            payload[7] = 1 if payload[7] != 1 else 2  # Same version, different (still-valid) level.
+        if mode == "delay_snapshot":
+            send_at = time.monotonic() + max(0, delay_ms) / 1000.0
+        else:
+            send_at = time.monotonic() + 0.05
+        self.delayed.append((send_at, replace(snapshot, payload=bytes(payload))))
+        self.event("inject", device=request.device, mode=mode, delay_ms=delay_ms)
+        return [reply]
 
     def devices(self):
         return [dict(asdict(d), endpoint=self.sim.binding.get(d.uart_device_id, (None, None))[0],
@@ -170,6 +211,34 @@ class Session:
         device_id = int(action["id"])
         if not 0 < device_id <= 0xFFFFFFFF:
             raise ValueError("id must be a nonzero uint32")
+        if op == "valid":
+            d = self.sim.devices[device_id]
+            updated = replace(d, state_valid=bool(action["state_valid"]))
+            self.sim.devices[device_id] = updated
+            self.sim._save()
+            self.event("action", action=action)
+            return
+        if op == "inject":
+            mode = action.get("mode", "clear")
+            if mode == "push_conflict":
+                # Unsolicited same-version snapshot with a different (valid) level;
+                # the Bridge must reject it with BAD_STATE_VERSION while synced.
+                d = self.sim.devices[device_id]
+                ep, binding = self.sim.binding[device_id]
+                snap = self.sim._snapshot(d, ep, binding)
+                payload = bytearray(snap.payload)
+                payload[7] = 1 if payload[7] != 1 else 2
+                self.enqueue(replace(snap, payload=bytes(payload)))
+                self.event("action", action=action)
+                return
+            if mode == "clear":
+                self.injects.pop(device_id, None)
+            else:
+                if mode not in ("no_snapshot", "delay_snapshot", "busy", "old_version", "conflict"):
+                    raise ValueError("unknown inject mode")
+                self.injects[device_id] = (mode, int(action.get("milliseconds", 300)))
+            self.event("action", action=action)
+            return
         if op == "add":
             if device_id in self.sim.devices:
                 raise ValueError("device already exists; use a distinct id")
@@ -221,6 +290,12 @@ class Session:
                     message_type = REMOVE_NOTIFY
                 else:
                     updated.online = op == "online"
+                    # With snapshot=false the ONLINE response does not push a
+                    # snapshot; the Bridge must re-sync via DEVICE_STATE_REQUEST.
+                    if op == "online" and action.get("snapshot") is False:
+                        self.defer_snapshots.add(device_id)
+                    else:
+                        self.defer_snapshots.discard(device_id)
                     payload = u8(0) + u32(updated.state_version) + u8(updated.state_flags) + bytes(2)
                     message_type = ONLINE_NOTIFY if updated.online else OFFLINE_NOTIFY
                 frame = Frame(message_type, ACK_REQUIRED, self.sim._next_sequence(), self.sim.session,
@@ -238,6 +313,8 @@ def main():
     parser.add_argument("--port", default="/dev/ttyUSB0")
     parser.add_argument("--console", default="/dev/ttyUSB2")
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--state", type=Path, default=None,
+                        help="Override the simulator state file (e.g. to restart the MCU side with preserved devices)")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     wire = (args.output / "uart.jsonl").open("a", buffering=1)
@@ -282,7 +359,7 @@ def main():
                 data = data[count:]
             log_frame("tx", frame)
         sim = PhoneSimulator(Path(__file__).parent / "fixtures/empty.json",
-                             args.output / "mcu-state.json", None)
+                             args.state or args.output / "mcu-state.json", None)
         session = Session(sim, send, event)
         event("started", port=args.port, console=args.console, app="user-developed",
               session=sim.session, note="Existing phone commissioning preserved; empty MCU list.")

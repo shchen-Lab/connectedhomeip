@@ -4,6 +4,7 @@
 状态：已开始本轮实板测试，用户自研 App 已配网。固件由用户编译烧录。
 首轮证据见 ../../test_results/bridge_uart_v2/phone-20260908-01/results.md。
 新增 phone_session.py 提供单串口owner的JSON交互增删/上下线/完整状态快照及真实IO日志；18项Python测试通过。
+2026-09-14：模拟器新增 DEVICE_STATE_REQUEST (0x44) 应答（OK+完整快照，含未知设备/绑定不符/离线错误分支与重传缓存）；`online` 动作支持 `"snapshot": false` 延迟快照，用于验证 Bridge 补发再同步路径。本轮验证计划见 ../../test_results/bridge_uart_v2/resync-20260914-test-plan.md。
 下文M1–M6仍是完整工具验收要求；增量上报、重启待删除续传、异常注入和完整渐变未完成。
 
 ## 1. 目标与分工

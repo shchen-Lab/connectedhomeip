@@ -67,8 +67,24 @@ void BridgeDevice::SetLevel(uint8_t level)
 void BridgeDevice::SetOnLevel(uint8_t level)
 {
     VerifyOrReturn(mHasLevel);
-    mOnLevel = level;
+    const bool changed = (mOnLevel != level);
+    mOnLevel          = level;
     ChipLogProgress(DeviceLayer, "BridgeDevice[%s]: on-level %u", mName, mOnLevel);
+    NotifyIfChanged(changed, kChanged_OnLevel);
+}
+
+void BridgeDevice::SetLevelOptions(uint8_t options)
+{
+    const bool changed = (mLevelOptions != options);
+    mLevelOptions = options;
+    NotifyIfChanged(changed, kChanged_LevelOptions);
+}
+
+void BridgeDevice::SetColorOptions(uint8_t options)
+{
+    const bool changed = (mColorOptions != options);
+    mColorOptions = options;
+    NotifyIfChanged(changed, kChanged_ColorOptions);
 }
 
 void BridgeDevice::SetHue(uint8_t hue)
@@ -141,8 +157,10 @@ void BridgeDevice::SetColorTemperatureMireds(uint16_t temperatureMireds)
 void BridgeDevice::SetStartUpColorTemperatureMireds(uint16_t temperatureMireds)
 {
     VerifyOrReturn(HasColorTemperature());
+    const bool changed = (mStartUpColorTemperatureMireds != temperatureMireds);
     mStartUpColorTemperatureMireds = temperatureMireds;
     ChipLogProgress(DeviceLayer, "BridgeDevice[%s]: startup color temperature %u mireds", mName, mStartUpColorTemperatureMireds);
+    NotifyIfChanged(changed, kChanged_StartUpColorTemperature);
 }
 
 void BridgeDevice::NotifyIfChanged(bool changed, Changed_t change)

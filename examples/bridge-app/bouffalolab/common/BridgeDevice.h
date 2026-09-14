@@ -48,6 +48,10 @@ public:
         kChanged_Name       = 0x08,
         kChanged_Level      = 0x10,
         kChanged_Color      = 0x20,
+        kChanged_LevelOptions = 0x40,
+        kChanged_ColorOptions = 0x80,
+        kChanged_OnLevel = 0x100,
+        kChanged_StartUpColorTemperature = 0x200,
     };
 
     using ChangeCallback = void (*)(BridgeDevice * device, Changed_t changeMask);
@@ -76,6 +80,8 @@ public:
     uint8_t GetLevel() const { return mLevel; }
 
     uint8_t GetOnLevel() const { return mOnLevel; }
+    uint8_t GetLevelOptions() const { return mLevelOptions; }
+    uint8_t GetColorOptions() const { return mColorOptions; }
 
     uint8_t GetHue() const { return mHue; }
 
@@ -107,6 +113,8 @@ public:
     void SetReachable(bool reachable);
     void SetLevel(uint8_t level);
     void SetOnLevel(uint8_t level);
+    void SetLevelOptions(uint8_t options);
+    void SetColorOptions(uint8_t options);
     void SetHue(uint8_t hue);
     void SetSaturation(uint8_t saturation);
     void SetHueSaturationState(uint8_t hue, uint8_t saturation);
@@ -125,6 +133,8 @@ private:
     uint32_t mColorFeatures                 = 0;
     uint8_t mLevel                          = 128;
     uint8_t mOnLevel                        = chip::app::NumericAttributeTraits<uint8_t>::kNullValue;
+    uint8_t mLevelOptions                   = 0;
+    uint8_t mColorOptions                   = 0;
     uint8_t mHue                            = 0;
     uint8_t mSaturation                     = 0;
     uint16_t mColorTemperatureMireds        = 250;

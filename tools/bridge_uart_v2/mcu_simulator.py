@@ -248,6 +248,18 @@ class Simulator:
             return [response, self._snapshot(device, request.endpoint, request.binding)] if device.online and device.state_valid else [response]
         if request.message_type == HEARTBEAT:
             return [self._response(request, HEARTBEAT_RESPONSE, u8(OK) + u32(int(time.monotonic())) + u32(self.list_version))]
+        if request.message_type == STATE_REQUEST:
+            device = self.devices.get(request.device)
+            binding = self.binding.get(request.device)
+            if not device:
+                return [self._response(request, STATE_RESPONSE, u8(UNKNOWN_DEVICE), UNKNOWN_DEVICE)]
+            if binding != (request.endpoint, request.binding):
+                return [self._response(request, STATE_RESPONSE, u8(MISMATCH), MISMATCH)]
+            if not device.online:
+                return [self._response(request, STATE_RESPONSE, u8(OFFLINE), OFFLINE)]
+            if not device.state_valid:
+                return [self._response(request, STATE_RESPONSE, u8(STATE_UNAVAILABLE), STATE_UNAVAILABLE)]
+            return [self._response(request, STATE_RESPONSE, u8(OK)), self._snapshot(device, request.endpoint, request.binding)]
         if request.message_type == COMMAND:
             binding = self.binding.get(request.device)
             if binding != (request.endpoint, request.binding):
