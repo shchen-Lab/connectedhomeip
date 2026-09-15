@@ -1,0 +1,63 @@
+{"app": "user-developed", "console": "/dev/ttyUSB2", "event": "started", "monotonic": 541003.609576665, "note": "Existing phone commissioning preserved; empty MCU list.", "port": "/dev/ttyUSB0", "session": 1557938726, "time": 1789459143.4642904}
+{"event": "partial_frame_timeout", "monotonic": 541003.729842345, "raw_hex": "00 00", "time": 1789459143.5845563}
+{"action": {"id": 1, "kind": "cw", "op": "add"}, "event": "action", "monotonic": 541139.63656003, "time": 1789459279.4912734}
+{"device": 1, "event": "ack", "monotonic": 541139.647150794, "payload": "00 03 00 0a 00 00 00", "sequence": 3, "status": 0, "time": 1789459279.501865, "type": "0x37"}
+{"devices": [{"binding": 10, "capability_flags": 19, "color_mode": 2, "color_temperature": 250, "device_type": 16, "endpoint": 3, "hue": 0, "level": 128, "on": 1, "online": true, "pending_remove": false, "saturation": 0, "state_valid": true, "state_version": 1, "uart_device_id": 1}], "event": "devices", "monotonic": 541139.64733046, "time": 1789459279.5020444}
+{"devices": [{"binding": 10, "capability_flags": 19, "color_mode": 2, "color_temperature": 250, "device_type": 16, "endpoint": 3, "hue": 0, "level": 128, "on": 1, "online": true, "pending_remove": false, "saturation": 0, "state_valid": true, "state_version": 1, "uart_device_id": 1}], "event": "devices", "monotonic": 541139.66304826, "time": 1789459279.5177624}
+{"device": 1, "event": "ack", "monotonic": 541139.663113495, "payload": "00 01 00 00 00", "sequence": 4, "status": 0, "time": 1789459279.5178275, "type": "0x41"}
+{"device": 1, "event": "ack", "monotonic": 541139.679069976, "payload": "00 01 00 00 00", "sequence": 5, "status": 0, "time": 1789459279.5337842, "type": "0x41"}
+{"action": {"id": 3, "kind": "hsct", "op": "add"}, "event": "action", "monotonic": 541240.595177051, "time": 1789459380.4498906}
+{"device": 3, "event": "ack", "monotonic": 541240.600966915, "payload": "00 04 00 0b 00 00 00", "sequence": 9, "status": 0, "time": 1789459380.455681, "type": "0x37"}
+{"devices": [{"binding": 10, "capability_flags": 19, "color_mode": 2, "color_temperature": 250, "device_type": 16, "endpoint": 3, "hue": 0, "level": 128, "on": 1, "online": true, "pending_remove": false, "saturation": 0, "state_valid": true, "state_version": 1, "uart_device_id": 1}, {"binding": 11, "capability_flags": 23, "color_mode": 0, "color_temperature": 250, "device_type": 17, "endpoint": 4, "hue": 0, "level": 128, "on": 1, "online": true, "pending_remove": false, "saturation": 0, "state_valid": true, "state_version": 1, "uart_device_id": 3}], "event": "devices", "monotonic": 541240.60115455, "time": 1789459380.4558687}
+{"devices": [{"binding": 10, "capability_flags": 19, "color_mode": 2, "color_temperature": 250, "device_type": 16, "endpoint": 3, "hue": 0, "level": 128, "on": 1, "online": true, "pending_remove": false, "saturation": 0, "state_valid": true, "state_version": 1, "uart_device_id": 1}, {"binding": 11, "capability_flags": 23, "color_mode": 0, "color_temperature": 250, "device_type": 17, "endpoint": 4, "hue": 0, "level": 128, "on": 1, "online": true, "pending_remove": false, "saturation": 0, "state_valid": true, "state_version": 1, "uart_device_id": 3}], "event": "devices", "monotonic": 541240.616886874, "time": 1789459380.471601}
+{"device": 3, "event": "ack", "monotonic": 541240.616958278, "payload": "00 01 00 00 00", "sequence": 10, "status": 0, "time": 1789459380.4716723, "type": "0x41"}
+{"device": 3, "event": "ack", "monotonic": 541240.632818907, "payload": "00 01 00 00 00", "sequence": 11, "status": 0, "time": 1789459380.487533, "type": "0x41"}
+{"action": {"id": 1, "op": "state", "values": {"color_temperature": 300, "level": 254, "on": 1}}, "event": "action", "monotonic": 541287.688276251, "time": 1789459427.5429893}
+{"device": 1, "event": "ack", "monotonic": 541287.701939943, "payload": "00 02 00 00 00", "sequence": 16, "status": 0, "time": 1789459427.5566537, "type": "0x41"}
+{"action": {"id": 3, "op": "state", "values": {"hue": 80, "level": 200, "on": 1, "saturation": 140}}, "event": "action", "monotonic": 541333.005662543, "time": 1789459472.8603764}
+{"device": 3, "event": "ack", "monotonic": 541333.011077241, "payload": "00 02 00 00 00", "sequence": 17, "status": 0, "time": 1789459472.8657913, "type": "0x41"}
+{"action": {"id": 3, "op": "offline"}, "event": "action", "monotonic": 541377.650404452, "time": 1789459517.505118}
+{"device": 3, "event": "ack", "monotonic": 541377.664432874, "payload": "00", "sequence": 18, "status": 0, "time": 1789459517.5191467, "type": "0x3f"}
+{"action": {"id": 3, "op": "online"}, "event": "action", "monotonic": 541400.616021461, "time": 1789459540.4707346}
+{"device": 3, "event": "ack", "monotonic": 541400.623042697, "payload": "00", "sequence": 19, "status": 0, "time": 1789459540.4777567, "type": "0x3d"}
+{"device": 3, "event": "ack", "monotonic": 541400.639119143, "payload": "00 04 00 00 00", "sequence": 20, "status": 0, "time": 1789459540.4938333, "type": "0x41"}
+{"action": {"id": 1, "op": "remove"}, "event": "action", "monotonic": 541422.324416196, "time": 1789459562.1791298}
+{"device": 1, "event": "ack", "monotonic": 541422.413767671, "payload": "00", "sequence": 21, "status": 0, "time": 1789459562.2684817, "type": "0x39"}
+{"action": {"id": 3, "mode": "no_snapshot", "op": "inject"}, "event": "action", "monotonic": 541457.422899456, "time": 1789459597.2776132}
+{"action": {"id": 3, "op": "offline"}, "event": "action", "monotonic": 541479.270277267, "time": 1789459619.124991}
+{"device": 3, "event": "ack", "monotonic": 541479.274212563, "payload": "00", "sequence": 25, "status": 0, "time": 1789459619.1289268, "type": "0x3f"}
+{"action": {"id": 3, "op": "online", "snapshot": false}, "event": "action", "monotonic": 541503.688030424, "time": 1789459643.5427444}
+{"device": 3, "event": "ack", "monotonic": 541503.70480598, "payload": "00", "sequence": 26, "status": 0, "time": 1789459643.55952, "type": "0x3d"}
+{"device": 3, "event": "snapshot_deferred", "monotonic": 541503.704822195, "time": 1789459643.5595362}
+{"device": 3, "event": "inject", "mode": "no_snapshot", "monotonic": 541503.704883482, "time": 1789459643.5595975}
+{"devices": [{"binding": 11, "capability_flags": 23, "color_mode": 0, "color_temperature": 250, "device_type": 17, "endpoint": 4, "hue": 80, "level": 200, "on": 1, "online": true, "pending_remove": false, "saturation": 140, "state_valid": true, "state_version": 6, "uart_device_id": 3}], "event": "devices", "monotonic": 541503.704979711, "time": 1789459643.5596938}
+{"device": 3, "event": "inject", "mode": "no_snapshot", "monotonic": 541505.752943356, "time": 1789459645.6076572}
+{"devices": [{"binding": 11, "capability_flags": 23, "color_mode": 0, "color_temperature": 250, "device_type": 17, "endpoint": 4, "hue": 80, "level": 200, "on": 1, "online": true, "pending_remove": false, "saturation": 140, "state_valid": true, "state_version": 6, "uart_device_id": 3}], "event": "devices", "monotonic": 541505.753312367, "time": 1789459645.6080258}
+{"device": 3, "event": "inject", "mode": "no_snapshot", "monotonic": 541508.808481496, "time": 1789459648.6631956}
+{"devices": [{"binding": 11, "capability_flags": 23, "color_mode": 0, "color_temperature": 250, "device_type": 17, "endpoint": 4, "hue": 80, "level": 200, "on": 1, "online": true, "pending_remove": false, "saturation": 140, "state_valid": true, "state_version": 6, "uart_device_id": 3}], "event": "devices", "monotonic": 541508.808590139, "time": 1789459648.663304}
+{"action": {"id": 3, "mode": "clear", "op": "inject"}, "event": "action", "monotonic": 541601.986607556, "time": 1789459741.841321}
+{"action": {"id": 3, "op": "offline"}, "event": "action", "monotonic": 541614.378900882, "time": 1789459754.2336075}
+{"error": "wait for HELLO/list and outstanding notification/snapshot ACKs", "event": "action_error", "monotonic": 541614.3790655, "time": 1789459754.2337794}
+{"device": 3, "event": "ack", "monotonic": 541614.386034072, "payload": "00", "sequence": 27, "status": 0, "time": 1789459754.2407484, "type": "0x3f"}
+{"action": {"id": 3, "op": "online"}, "event": "action", "monotonic": 541658.363388549, "time": 1789459798.2181022}
+{"device": 3, "event": "ack", "monotonic": 541658.367201875, "payload": "00", "sequence": 28, "status": 0, "time": 1789459798.221916, "type": "0x3d"}
+{"device": 3, "event": "ack", "monotonic": 541658.383136572, "payload": "00 08 00 00 00", "sequence": 29, "status": 0, "time": 1789459798.2378507, "type": "0x41"}
+{"action": {"id": 3, "mode": "conflict", "op": "inject"}, "event": "action", "monotonic": 541682.60236794, "time": 1789459822.4570818}
+{"action": {"id": 3, "op": "offline"}, "event": "action", "monotonic": 541692.832528397, "time": 1789459832.687242}
+{"device": 3, "event": "ack", "monotonic": 541692.845154938, "payload": "00", "sequence": 30, "status": 0, "time": 1789459832.699869, "type": "0x3f"}
+{"action": {"id": 3, "op": "online", "snapshot": false}, "event": "action", "monotonic": 541702.85347576, "time": 1789459842.7081892}
+{"device": 3, "event": "ack", "monotonic": 541702.860399662, "payload": "00", "sequence": 31, "status": 0, "time": 1789459842.7151136, "type": "0x3d"}
+{"device": 3, "event": "snapshot_deferred", "monotonic": 541702.860418286, "time": 1789459842.7151325}
+{"delay_ms": 300, "device": 3, "event": "inject", "mode": "conflict", "monotonic": 541702.908738321, "time": 1789459842.7634525}
+{"devices": [{"binding": 11, "capability_flags": 23, "color_mode": 0, "color_temperature": 250, "device_type": 17, "endpoint": 4, "hue": 80, "level": 200, "on": 1, "online": true, "pending_remove": false, "saturation": 140, "state_valid": true, "state_version": 10, "uart_device_id": 3}], "event": "devices", "monotonic": 541702.908899765, "time": 1789459842.7636137}
+{"device": 3, "event": "ack", "monotonic": 541702.972416317, "payload": "00 0a 00 00 00", "sequence": 32, "status": 0, "time": 1789459842.8271303, "type": "0x41"}
+{"action": {"id": 3, "mode": "clear", "op": "inject"}, "event": "action", "monotonic": 541736.783859311, "time": 1789459876.6385725}
+{"action": {"id": 3, "mode": "push_conflict", "op": "inject"}, "event": "action", "monotonic": 541743.880346422, "time": 1789459883.7350597}
+{"device": 3, "event": "ack", "monotonic": 541743.897912294, "payload": "00 0a 00 00 00", "sequence": 33, "status": 0, "time": 1789459883.7526264, "type": "0x41"}
+{"action": {"id": 3, "op": "state", "values": {"level": 1}}, "event": "action", "monotonic": 541808.52743148, "time": 1789459948.3821452}
+{"device": 3, "event": "ack", "monotonic": 541808.533911711, "payload": "00 0b 00 00 00", "sequence": 34, "status": 0, "time": 1789459948.3886256, "type": "0x41"}
+{"action": {"id": 3, "mode": "push_conflict", "op": "inject"}, "event": "action", "monotonic": 541832.918425901, "time": 1789459972.7731395}
+{"device": 3, "event": "ack", "monotonic": 541832.932418078, "payload": "08", "sequence": 35, "status": 8, "time": 1789459972.7871323, "type": "0x41"}
+{"action": {"id": 3, "mode": "clear", "op": "inject"}, "event": "action", "monotonic": 541866.284205384, "time": 1789460006.1389186}
+{"action": {"id": 3, "op": "remove"}, "event": "action", "monotonic": 541956.088895144, "time": 1789460095.9436088}
+{"device": 3, "event": "ack", "monotonic": 541956.108820328, "payload": "00", "sequence": 36, "status": 0, "time": 1789460095.9635344, "type": "0x39"}

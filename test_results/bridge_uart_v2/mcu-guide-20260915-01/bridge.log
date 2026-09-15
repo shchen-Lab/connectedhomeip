@@ -1,0 +1,361 @@
+[  88359806][DL][PROGR] BridgeDevice[Color Temperature Light 1]: OFFLINE
+[  88359806][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  88364806][ZCL][PROGR] UART v2 TX type=30 seq=12672 dev=0 ep=0 bind=0
+[  88364820][ZCL][PROGR] UART v2 TX type=32 seq=12673 dev=0 ep=0 bind=0
+[  88364836][DL][PROGR] BridgeDevice[Color Temperature Light 1]: OFFLINE
+[  88364836][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  88369856][ZCL][PROGR] UART v2 TX type=42 seq=12674 dev=0 ep=0 bind=0
+[  88374856][ZCL][PROGR] UART v2 TX type=42 seq=12675 dev=0 ep=0 bind=0
+[  88379856][ZCL][PROGR] UART v2 TX type=42 seq=12676 dev=0 ep=0 bind=0
+[  88384856][ZCL][PROGR] UART v2 TX type=42 seq=12677 dev=0 ep=0 bind=0
+[  88389856][ZCL][PROGR] UART v2 TX type=42 seq=12678 dev=0 ep=0 bind=0
+[  88394856][ZCL][PROGR] UART v2 TX type=42 seq=12679 dev=0 ep=0 bind=0
+[  88399856][ZCL][PROGR] UART v2 TX type=42 seq=12680 dev=0 ep=0 bind=0
+[  88404856][ZCL][PROGR] UART v2 TX type=42 seq=12681 dev=0 ep=0 bind=0
+[  88409856][ZCL][PROGR] UART v2 TX type=42 seq=12682 dev=0 ep=0 bind=0
+[  88414856][ZCL][PROGR] UART v2 TX type=42 seq=12683 dev=0 ep=0 bind=0
+[  88419856][ZCL][PROGR] UART v2 TX type=42 seq=12684 dev=0 ep=0 bind=0
+[  88424856][ZCL][PROGR] UART v2 TX type=42 seq=12685 dev=0 ep=0 bind=0
+[  88429856][ZCL][PROGR] UART v2 TX type=42 seq=12686 dev=0 ep=0 bind=0
+[  88434856][ZCL][PROGR] UART v2 TX type=42 seq=12687 dev=0 ep=0 bind=0
+[  88439856][ZCL][PROGR] UART v2 TX type=42 seq=12688 dev=0 ep=0 bind=0
+[  88444856][ZCL][PROGR] UART v2 TX type=42 seq=12689 dev=0 ep=0 bind=0
+[  88449856][ZCL][PROGR] UART v2 TX type=42 seq=12690 dev=0 ep=0 bind=0
+[  88454856][ZCL][PROGR] UART v2 TX type=42 seq=12691 dev=0 ep=0 bind=0
+[  88459856][ZCL][PROGR] UART v2 TX type=42 seq=12692 dev=0 ep=0 bind=0
+[  88464856][ZCL][PROGR] UART v2 TX type=42 seq=12693 dev=0 ep=0 bind=0
+[  88469856][ZCL][PROGR] UART v2 TX type=42 seq=12694 dev=0 ep=0 bind=0
+Received RIO
+prefix FD6D:E9C9:593D:: lifetime 1800
+Added entry to route table
+[  88474856][ZCL][PROGR] UART v2 TX type=42 seq=12695 dev=0 ep=0 bind=0
+[  88479856][ZCL][PROGR] UART v2 TX type=42 seq=12696 dev=0 ep=0 bind=0
+[  88484856][ZCL][PROGR] UART v2 TX type=42 seq=12697 dev=0 ep=0 bind=0
+[  88489856][ZCL][PROGR] UART v2 TX type=42 seq=12698 dev=0 ep=0 bind=0
+[  88494856][ZCL][PROGR] UART v2 TX type=42 seq=12699 dev=0 ep=0 bind=0
+[  88495633][ZCL][PROGR] UART v2 TX type=37 seq=3 dev=1 ep=0 bind=0
+[  88495634][ZCL][PROGR] UART v2 TX type=3a seq=12700 dev=1 ep=3 bind=10
+[  88495647][ZCL][PROGR] UART re-sync dev=1 ep=3 version=0
+[  88495647][ZCL][PROGR] UART v2 TX type=44 seq=12701 dev=1 ep=3 bind=10
+[  88495648][DL][PROGR] BridgeDevice[Color Temperature Light 1]: ON
+[  88495648][DL][PROGR] BridgeDevice[Color Temperature Light 1]: level 128
+[  88495648][DL][PROGR] BridgeDevice[Color Temperature Light 1]: color temperature 250 mireds
+[  88495649][DL][PROGR] BridgeDevice[Color Temperature Light 1]: ONLINE
+[  88495649][ZCL][PROGR] UART state applied snapshot ep=3 dev=1 version=1 mask=0043 values=01 80 fa 00
+[  88495650][ZCL][PROGR] UART v2 TX type=41 seq=4 dev=1 ep=3 bind=10
+[  88495650][DL][PROGR] Attribute changed ep=3 cluster=0x00000039 attr=0x00000011
+[  88495651][DL][PROGR] Reachable callback ep=3
+[  88495659][ZCL][PROGR] UART re-sync response OK dev=1; waiting for snapshot
+[  88495660][DL][PROGR] BridgeDevice[Color Temperature Light 1]: ON
+[  88495660][DL][PROGR] BridgeDevice[Color Temperature Light 1]: level 128
+[  88495660][DL][PROGR] BridgeDevice[Color Temperature Light 1]: color temperature 250 mireds
+[  88495661][DL][PROGR] BridgeDevice[Color Temperature Light 1]: ONLINE
+[  88495661][ZCL][PROGR] UART state applied snapshot ep=3 dev=1 version=1 mask=0043 values=01 80 fa 00
+[  88495662][ZCL][PROGR] UART v2 TX type=41 seq=5 dev=1 ep=3 bind=10
+[  88499857][ZCL][PROGR] UART v2 TX type=42 seq=12702 dev=0 ep=0 bind=0
+[  88499868][ZCL][PROGR] UART v2 TX type=32 seq=12703 dev=0 ep=0 bind=0
+[  88499884][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  88504857][ZCL][PROGR] UART v2 TX type=42 seq=12704 dev=0 ep=0 bind=0
+[  88509857][ZCL][PROGR] UART v2 TX type=42 seq=12705 dev=0 ep=0 bind=0
+[  88514857][ZCL][PROGR] UART v2 TX type=42 seq=12706 dev=0 ep=0 bind=0
+[  88519857][ZCL][PROGR] UART v2 TX type=42 seq=12707 dev=0 ep=0 bind=0
+[  88524857][ZCL][PROGR] UART v2 TX type=42 seq=12708 dev=0 ep=0 bind=0
+[  88529857][ZCL][PROGR] UART v2 TX type=42 seq=12709 dev=0 ep=0 bind=0
+[  88534857][ZCL][PROGR] UART v2 TX type=42 seq=12710 dev=0 ep=0 bind=0
+[  88539857][ZCL][PROGR] UART v2 TX type=42 seq=12711 dev=0 ep=0 bind=0
+[  88544857][ZCL][PROGR] UART v2 TX type=42 seq=12712 dev=0 ep=0 bind=0
+[  88549857][ZCL][PROGR] UART v2 TX type=42 seq=12713 dev=0 ep=0 bind=0
+[  88554857][ZCL][PROGR] UART v2 TX type=42 seq=12714 dev=0 ep=0 bind=0
+[  88559857][ZCL][PROGR] UART v2 TX type=42 seq=12715 dev=0 ep=0 bind=0
+[  88564857][ZCL][PROGR] UART v2 TX type42 seq=12716 dev=0 ep=0 bind=0
+[  88569857][ZCL][PROGR] UART v2 TX type=42 seq=12717 dev=0 ep=0 bind=0
+[  88574857][ZCL][PROGR] UART v2 TX type=42 seq=12718 dev=0 ep=0 bind=0
+[  88579857][ZCL][PROGR] UART v2 TX type=42 seq=12719 dev=0 ep=0 bind=0
+[  88584857][ZCL][PROGR] UART v2 TX type=42 seq=12720 dev=0 ep=0 bind=0
+[  88589857][ZCL][PROGR] UART v2 TX type=42 seq=12721 dev=0 ep=0 bind=0
+[  88594857][ZCL][PROGR] UART v2 TX type=42 seq=12722 dev=0 ep=0 bind=0
+[  88596592][ZCL][PROGR] UART v2 TX type=37 seq=9 dev=3 ep=0 bind=0
+[  88596593][ZCL][PROGR] UART v2 TX type=3a seq=12723 dev=3 ep=4 bind=11
+[  88596600][ZCL][PROGR] UART re-sync dev=3 ep=4 version=0
+[  88596601][ZCL][PROGR] UART v2 TX type=44 seq=12724 dev=3 ep=4 bind=11
+[  88596601][DL][PROGR] BridgeDevice[Extended Color Light 3]: ON
+[  88596602][DL][PROGR] BridgeDevice[Extended Color Light 3]: level 128
+[  88596602][DL][PROGR] BridgeDevice[Extended Color Light 3]: ONLINE
+[  88596602][ZCL][PROGR] UART state applied snapshot ep=4 dev=3 version=1 mask=000f values=01 80 00 00
+[  88596603][ZCL][PROGR] UART v2 TX type=41 seq=10 dev=3 ep=4 bind=11
+[  88596604][DL][PROGR] Attribute changed ep=4 cluster=0x00000039 attr=0x00000011
+[  88596604][DL][PROGR] Reachable callback ep=4
+[  88596613][ZCL][PROGR] UART re-sync response OK dev=3; waiting for snapshot
+[  88596614][DL][PROGR] BridgeDevice[Extended Color Light 3]: ON
+[  88596614][DL][PROGR] BridgeDevice[Extended Color Light 3]: level 128
+[  88596614][DL][PROGR] BridgeDevice[Extended Color Light 3]: ONLINE
+[  88596615][ZCL][PROGR] UART state applied snapshot ep=4 dev=3 version=1 mask=000f values=01 80 00 00
+[  88596616][ZCL][PROGR] UART v2 TX type=41 seq=11 dev=3 ep=4 bind=11
+[  88599857][ZCL][PROGR] UART v2 TX type=42 seq=12725 dev=0 ep=0 bind=0
+[  88599862][ZCL][PROGR] UART v2 TX type=32 seq=12726 dev=0 ep=0 bind=0
+[  88604857][ZCL][PROGR] UART v2 TX type=42 seq=12727 dev=0 ep=0 bind=0
+[  88609857][ZCL][PROGR] UART v2 TX type=42 seq=12728 dev=0 ep=0 bind=0
+[  88614857][ZCL][PROGR] UART v2 TX type=42 seq=12729 dev=0 ep=0 bind=0
+[  88619857][ZCL][PROGR] UART v2 TX type=42 seq=12730 dev=0 ep=0 bind=0
+[  88624857][ZCL][PROGR] UART v2 TX type=42 seq=12731 dev=0 ep=0 bind=0
+[  88629857][ZCL][PROGR] UART v2 TX type=42 seq=12732 dev=0 ep=0 bind=0
+[  88634857][ZCL][PROGR] UART v2 TX type=42 seq=12733 dev=0 ep=0 bind=0
+[  88639857][ZCL][PROGR] UART v2 TX type=42 seq=12734 dev=0 ep=0 bind=0
+[  88643684][DL][PROGR] BridgeDevice[Color Temperature Light 1]: ON
+[  88643685][DL][PROGR] BridgeDevice[Color Temperature Light 1]: level 254
+[  88643685][DL][PROGR] BridgeDevice[Color Temperature Light 1]: color temperature 300 mireds
+[  88643686][DL][PROGR] BridgeDevice[Color Temperature Light 1]: ONLINE
+[  88643686][ZCL][PROGR] UART state applied snapshot ep=3 dev=1 version=2 mask=0043 values=01 fe 2c 01
+[  88643687][ZCL][PROGR] UART v2 TX type=41 seq=16 dev=1 ep=3 bind=10
+[  88643687][DL][PROGR] Attribute changed ep=3 cluster=0x00000008 attr=0x00000000
+[  88643688][DL][PROGR] Attribute changed ep=3 cluster=0x00000300 attr=0x00000007
+[  88643688][DL][PROGR] Attribute changed ep=3 cluster=0x00000300 attr=0x00000008
+[  88643688][DL][PROGR] Attribute changed ep=3 cluster=0x00000300 attr=0x00004001
+[  88644857][ZCL][PROGR] UART v2 TX type=42 seq=12735 dev=0 ep=0 bind=0
+[  88649857][ZCL][PROGR] UART v2 TX type=42 seq=12736 dev=0 ep=0 bind=0
+Received RIO
+prefix FD6D:E9C9:593D:: lifetime 1800
+Added entry to route table
+[  88654857][ZCL][PROGR] UART v2 TX type=42 seq=12737 dev=0 ep=0 bind=0
+[  88659857][ZCL][PROGR] UART v2 TX type=42 seq=12738 dev=0 ep=0 bind=0
+[  88664857][ZCL][PROGR] UART v2 TX type=42 seq=12739 dev=0 ep=0 bind=0
+[  88669857][ZCL][PROGR] UART v2 TX type=42 seq=12740 dev=0 ep=0 bind=0
+[  88674857][ZCL][PROGR] UART v2 TX type=42 seq=12741 dev=0 ep=0 bind=0
+[  88679857][ZCL][PROGR] UART v2 TX type=42 seq=12742 dev=0 ep=0 bind=0
+[  88684857][ZCL][PROGR] UART v2 TX type=42 seq=12743 dev=0 ep=0 bind=0
+[  88689002][DL][PROGR] BridgeDevice[Extended Color Light 3]: ON
+[  88689002][DL][PROGR] BridgeDevice[Extended Color Light 3]: level 200
+[  88689003][DL][PROGR] BridgeDevice[Extended Color Light 3]: ONLINE
+[  88689003][ZCL][PROGR] UART state applied snapshot ep=4 dev=3 version=2 mask=000f values=01 c8 50 8c
+[  88689004][ZCL][PROGR] UART v2 TX type=41 seq=17 dev=3 ep=4 bind=11
+[  88689004][DL][PROGR] Attribute changed ep=4 cluster=0x00000008 attr=0x00000000
+[  88689005][DL][PROGR] Attribute changed ep=4 cluster=0x00000300 attr=0x00000000
+[  88689005][DL][PROGR] Attribute changed ep=4 cluster=0x00000300 attr=0x00000001
+[  88689005][DL][PROGR] Attribute changed ep=4 cluster=0x00000300 attr=0x00000007
+[  88689006][DL][PROGR] Attribute changed ep=4 cluster=0x00000300 attr=0x00000008
+[  88689006][DL][PROGR] Attribute changed ep=4 cluster=0x00000300 attr=0x00004001
+[  88689857][ZCL][PROGR] UART v2 TX type=42 eq=12744 dev=0 ep=0 bind=0
+[  88694857][ZCL][PROGR] UART v2 TX type=42 seq=12745 dev=0 ep=0 bind=0
+[  88699857][ZCL][PROGR] UART v2 TX type=42 seq=12746 dev=0 ep=0 bind=0
+[  88704857][ZCL][PROGR] UART v2 TX type=42 seq=12747 dev=0 ep=0 bind=0
+[  88709857][ZCL][PROGR] UART v2 TX type=42 seq=12748 dev=0 ep=0 bind=0
+[  88714857][ZCL][PROGR] UART v2 TX type=42 seq=12749 dev=0 ep=0 bind=0
+[  88719857][ZCL][PROGR] UART v2 TX type=42 seq=12750 dev=0 ep=0 bind=0
+[  88724857][ZCL][PROGR] UART v2 TX type=42 seq=12751 dev=0 ep=0 bind=0
+[  88729857][ZCL][PROGR] UART v2 TX type=42 seq=12752 dev=0 ep=0 bind=0
+[  88733647][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  88733647][ZCL][PROGR] UART v2 TX type=3f seq=18 dev=3 ep=4 bind=11
+[  88733648][DL][PROGR] Attribute changed ep=4 cluster=0x00000039 attr=0x00000011
+[  88733648][DL][PROGR] Reachable callback ep=4
+[  88734857][ZCL][PROGR] UART v2 TX type=42 seq=12753 dev=0 ep=0 bind=0
+[  88739857][ZCL][PROGR] UART v2 TX type=42 seq=12754 dev=0 ep=0 bind=0
+[  88744857][ZCL][PROGR] UART v2 TX type=42 seq=12755 dev=0 ep=0 bind=0
+[  88749857][ZCL][PROGR] UART v2 TX type=42 seq=12756 dev=0 ep=0 bind=0
+[  88754857][ZCL][PROGR] UART v2 TX type=42 seq=12757 dev=0 ep=0 bind=0
+[  88756612][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  88756613][ZCL][PROGR] UART v2 TX type=3d seq=19 dev=3 ep=4 bind=11
+[  88756619][DL][PROGR] BridgeDevice[Extended Color Light 3]: ON
+[  88756619][DL][PROGR] BridgeDevice[Extended Color Light 3]: level 200
+[  88756620][DL][PROGR] BridgeDevice[Extended Color Light 3]: ONLINE
+[  88756620][ZCL][PROGR] UART state applied snapshot ep=4 dev=3 version=4 mask=000f values=01 c8 50 8c
+[  88756621][ZCL][PROGR] UART v2 TX type=41 seq=20 dev=3 ep=4 bind=11
+[  88756621][DL][PROGR] Attribute changed ep=4 cluster=0x00000039 attr=0x00000011
+[  88756622][DL][PROGR] Reachable callback ep=4
+[  88759857][ZCL][PROGR] UART v2 TX type=42 seq=12758 dev=0 ep=0 bind=0
+[  88764857][ZCL][PROGR] UART v2 TX type=42 seq=12759 dev=0 ep=0 bind=0
+[  88769857][ZCL][PROGR] UART v2 TX type=42 seq=12760 dev=0 ep=0 bind=0
+[  88774858][ZCL][PROGR] UART v2 TX type=42 seq=12761 dev=0 ep=0 bind=0
+[  88778323][DL][PROGR] BridgeDevice[Color Temperature Light 1]: OFFLINE
+[  88778324][DL][PROGR] Removed dynamic device Color Temperature Light 1 (uniqueId=bridge-uart-00000001) from dynamic endpoint 3 (index=0)
+[  88778325][DL][PROGR] BridgeDevice[Color Temperature Light 1]: OFFLINE
+[  88778393][ZCL][PROGR] UART v2 TX type=39 seq=21 dev=1 ep=3 bind=10
+[  88778393][DL][PROGR] Attribute changed ep=3 cluster=0x00000039 attr=0x00000011
+[  88778394][DL][PROGR] Reachable callback ep=3
+[  88778394][ZCL][ERROR] ReachabledChanged: Failed to get Reachable value
+[  88778395][DMG][ERROR] Endpoint 3, Cluster 0x0000_0039 not found in IncreaseClusterDataVersion!
+[  88779895][ZCL][PROGR] UART v2 TX type=42 seq=12762 dev=0 ep=0 bind=0
+[  88779905][ZCL][PROGR] UART v2 TX type=32 seq=12763 dev=0 ep=0 bind=0
+[  88784895][ZCL][PROGR] UART v2 TX type=42 seq=12764 dev=0 ep=0 bind=0
+[  88789895][ZCL][PROGR] UART v2 TX type=42 seq=12765 dev=0 ep=0 bind=0
+[  88794895][ZCL][PROGR] UART v2 TX type=42 seq=12766 dev=0 ep=0 bind=0
+[  88799895][ZCL][PROGR] UART v2 TX type=42 seq=12767 dev=0 ep=0 bind=0
+[  88804895][ZCL][PROGR] UART v2 TX type=42 seq=12768 dev=0 ep=0 bind=0
+[  88809895][ZCL][PROGR] UART v2 TX type=42 seq=12769 dev=0 ep=0 bind=0
+[  88814895][ZCL][PROGR] UART v2 TX type=42 seq=12770 dev=0 ep=0 bind=0
+[  88819895][ZCL][PROGR] UART v2 TX type=42 seq=12771 dev=0 ep=0 bind=0
+[  88824895][ZCL][PROGR] UART v2 TX type=42 seq=12772 dev=0 ep=0 bind=0
+[  88829896][ZCL][PROGR] UART v2 TX type=42 seq=12773 dev=0 ep=0 bind=
+Received RIO
+prefix FD6D:E9C9:593D:: lifetime 1800
+Added entry to route table
+[  88834896][ZCL][PROGR] UART v2 TX type=42 seq=12774 dev=0 ep=0 bind=0
+[  88835266][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  88835267][ZCL][PROGR] UART v2 TX type=3f seq=25 dev=3 ep=4 bind=11
+[  88835267][DL][PROGR] Attribute changed ep=4 cluster=0x00000039 attr=0x00000011
+[  88835268][DL][PROGR] Reachable callback ep=4
+[  88839896][ZCL][PROGR] UART v2 TX type=42 seq=12775 dev=0 ep=0 bind=0
+[  88844896][ZCL][PROGR] UART v2 TX type=42 seq=12776 dev=0 ep=0 bind=0
+[  88849896][ZCL][PROGR] UART v2 TX type=42 seq=12777 dev=0 ep=0 bind=0
+[  88854896][ZCL][PROGR] UART v2 TX type=42 seq=12778 dev=0 ep=0 bind=0
+[  88859684][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  88859685][ZCL][PROGR] UART v2 TX type=3d seq=26 dev=3 ep=4 bind=11
+[  88859696][ZCL][PROGR] UART re-sync dev=3 ep=4 version=6
+[  88859696][ZCL][PROGR] UART v2 TX type=44 seq=12779 dev=3 ep=4 bind=11
+[  88859701][ZCL][PROGR] UART re-sync response OK dev=3; waiting for snapshot
+[  88859896][ZCL][PROGR] UART v2 TX type=42 seq=12780 dev=0 ep=0 bind=0
+[  88860746][ZCL][ERROR] UART re-sync snapshot timeout dev=3 ep=4
+[  88861746][ZCL][PROGR] UART re-sync dev=3 ep=4 version=6
+[  88861746][ZCL][PROGR] UART v2 TX type=44 seq=12781 dev=3 ep=4 bind=11
+[  88861749][ZCL][PROGR] UART re-sync response OK dev=3; waiting for snapshot
+[  88862796][ZCL][ERROR] UART re-sync snapshot timeout dev=3 ep=4
+[  88864796][ZCL][PROGR] UART re-sync dev=3 ep=4 version=6
+[  88864796][ZCL][PROGR] UART v2 TX type=44 seq=12782 dev=3 ep=4 bind=11
+[  88864804][ZCL][PROGR] UART re-sync response OK dev=3; waiting for snapshot
+[  88864896][ZCL][PROGR] UART v2 TX type=42 seq=12783 dev=0 ep=0 bind=0
+[  88865846][ZCL][ERROR] UART re-sync snapshot timeout dev=3 ep=4
+[  88868846][ZCL][ERROR] UART re-sync exhausted dev=3 ep=4
+[  88869896][ZCL][PROGR] UART v2 TX type=42 seq=12784 dev=0 ep=0 bind=0[  88874896][ZCL][PROGR] UART v2 TX type=42 seq=12785 dev=0 ep=0 bind=0
+[  88879896][ZCL][PROGR] UART v2 TX type=42 seq=12786 dev=0 ep=0 bind=0
+[  88884896][ZCL][PROGR] UART v2 TX type=42 seq=12787 dev=0 ep=0 bind=0
+[  88889896][ZCL][PROGR] UART v2 TX type=42 seq=12788 dev=0 ep=0 bind=0
+[  88894896][ZCL][PROGR] UART v2 TX type=42 seq=12789 dev=0 ep=0 bind=0
+[  88899896][ZCL][PROGR] UART v2 TX type=42 seq=12790 dev=0 ep=0 bind=0
+[  88904896][ZCL][PROGR] UART v2 TX type=42 seq=12791 dev=0 ep=0 bind=0
+[  88909896][ZCL][PROGR] UART v2 TX type=42 seq=12792 dev=0 ep=0 bind=0
+[  88914896][ZCL][PROGR] UART v2 TX type=42 seq=12793 dev=0 ep=0 bind=0
+[  88919896][ZCL][PROGR] UART v2 TX type=42 seq=12794 dev=0 ep=0 bind=0
+[  88924896][ZCL][PROGR] UART v2 TX type=42 seq=12795 dev=0 ep=0 bind=0
+[  88929896][ZCL][PROGR] UART v2 TX type=42 seq=12796 dev=0 ep=0 bind=0
+[  88934896][ZCL][PROGR] UART v2 TX type=42 seq=12797 dev=0 ep=0 bind=0
+[  88939896][ZCL][PROGR] UART v2 TX type=42 seq=12798 dev=0 ep=0 bind=0
+[  88944896][ZCL][PROGR] UART v2 TX type=42 seq=12799 dev=0 ep=0 bind=0
+[  88949896][ZCL][PROGR] UART v2 TX type=42 seq=12800 dev=0 ep=0 bind=0
+[  88954896][ZCL][PROGR] UART v2 TX type=42 seq=12801 dev=0 ep=0 bind=0
+[  88959896][ZCL][PROGR] UART v2 TX type=42 seq=12802 dev=0 ep=0 bind=0
+[  88964896][ZCL][PROGR] UART v2 TX type=42 seq=12803 dev=0 ep=0 bind=0
+[  88969896][ZCL][PROGR] UART v2 TX type=42 seq=12804 dev=0 ep=0 bind=0
+[  88970375][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  88970376][ZCL][PROGR] UART v2 TX type=3f seq=27 dev=3 ep=4 bind=11
+[  88974896][ZCL][PROGR] UART v2 TX type=42 seq=12805 dev=0 ep=0 bind=0
+[  88979896][ZCL][PROGR] UART v2 TX type=42 seq=12806 dev=0 ep=0 bind=0
+[  88984896][ZCL][PROGR] UART v2 TX type=42 seq=12807 dev=0 ep=0 bind=0
+[  88989896][ZCL][PROGR] UART v2 TX type=42 seq=12808 dev=0 ep=0 bind=0
+[  88994899][ZCL][PROGR] UART v2 TX type=42 seq=12809 dev=0 ep=0 bind=0
+[  88999899][ZCL][PROGR] UART v2 TX type=42 seq=12810 dev=0 ep=0 bind=0
+[  89004899][ZCL][PROGR] UART v2 TX type=42 seq=12811 dev=0 ep=0 bind=0
+[  89009899][ZCL][PROGR] UART v2 TX type=42 seq=12812 dev=0 ep=0 bind=0
+[  89014360][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  89014360][ZCL][PROGR] UART v2 TX type=3d seq=28 dev=3 ep=4 bind=11
+[  89014363][DL][PROGR] BridgeDevice[Extended Color Light 3]: ON
+[  89014363][DL][PROGR] BridgeDevice[Extended Color Light 3]: level 200
+[  89014364][DL][PROGR] BridgeDevice[Extended Color Light 3]: ONLINE
+[  89014364][ZCL][PROGR] UART state applied snapshot ep=4 dev=3 version=8 mask=000f values=01 c8 50 8c
+[  89014365][ZCL][PROGR] UART v2 TX type=41 seq=29 dev=3 ep=4 bind=11
+[  89014365][DL][PROGR] Attribute changed ep=4 cluster=0x00000039 attr=0x00000011
+[  89014366][DL][PROGR] Reachable callback ep=4
+[  89014899][ZCL][PROGR] UART v2 TX type=42 seq=12813 dev=0 ep=0 bind=0
+Received RIO
+prefix FD6D:E9C9:593D:: lifetime 1800
+Added entry to route table
+[  89019899][ZCL][PROGR] UART v2 TX type=42 seq=12814 dev=0 ep=0 bind=0
+[  89024899][ZCL][PROGR] UART v2 TX type=42 seq=12815 dev=0 ep=0 bind=0
+[  89029899][ZCL][PROGR] UART v2 TX type=42 seq=12816 dev=0 ep=0 bind=0
+[  89034899][ZCL][PROGR] UART v2 TX type=42 seq=12817 dev=0 ep=0 bind=0
+[  89039899][ZCL][PROGR] UART v2 TX type=42 seq=12818 dev=0 ep=0 bind=0
+[  89044899][ZCL][PROGR] UART v2 TX type=42 seq=12819 dev=0 ep=0 bind=0
+[  89048829][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  89048830][ZCL][PROGR] UART v2 TX type=3f seq=30 dev=3 ep=4 bind=11
+[  89048830][DL][PROGR] Attribute changed ep=4 cluster=0x00000039 attr=0x00000011
+[  89048830][DL][PROGR] Reachable callback ep=4
+[  89049899][ZCL][PROGR] UART v2 TX type=42 seq=12820 dev=0 ep=0 bind=0
+[  89054899][ZCL][PROGR] UART v2 TX type=42 seq=12821 dev=0 ep=0 bind=0
+[  89058850][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  89058850][ZCL][PROGR] UART v2 TX type=3d seq=31 dev=3 ep=4 bind=11
+[  89058899][ZCL][PROGR] UART re-sync dev=3 ep=4 version=10
+[  89058899][ZCL][PROGR] UART v2 TX type=44 seq=12822 dev=3 ep=4 bind=11
+[  89058905][ZCL][PROGR] UART re-sync response OK dev=3; waiting for snapshot
+[  89058958][DL][PROGR] BridgeDevice[Extended Color Light 3]: ON
+[  89058959][DL][PROGR] BridgeDevice[Extended Color Light 3]: level 1
+[  89058959][DL][PROGR] BridgeDevice[Extended Color Light 3]: ONLINE
+[  89058959][ZCL][PROGR] UART state applied snapshot ep=4 dev=3 version=10 mask=000f values=01 01 50 8c
+[  89058960][ZCL][PROGR] UART v2 TX type=41 seq=32 dev=3 ep=4 bind=11
+[  89058961][DL][PROGR] Attribute changed ep=4 cluster=0x00000008 attr=0x00000000
+[  89058961][DL][PROGR] Attribute changed ep=4 cluster=0x00000039 attr=0x00000011
+[  89058961][DL][PROGR] Reachable callback ep=4
+[  89059899][ZCL][PROGR] UART v2 TX type=42 seq=12823 dev=0 ep=0 bind=0
+[  89064899][ZCL][PROGR] UART v2 TX type=42 seq=12824 dev=0 ep=0 bind=0
+[  89069899][ZCL][PROGR] UART v2 TX type=42 seq=12825 dev=0 ep=0 bind=0
+[  89074899][ZCL][PROGR] UART v2 TX type=42 seq=12826 dev=0 ep=0 bind=0
+[  89079899][ZCL][PROGR] UART v2 TX type=42 seq=12827 dev=0 ep=0 bind=0
+[  89084899][ZCL][PROGR] UART v2 TX type=42 seq=12828 dev=0 ep=0 bind=0
+[  89089899][ZCL][PROGR] UART v2 TX type=42 seq=12829 dev=0 ep=0 bind=0
+[  89094899][ZCL][PROGR] UART v2 TX type=42 seq=12830 dev=0 ep=0 bind=0
+[  89099877][DL][PROGR] BridgeDevice[Extended Color Light 3]: ON
+[  89099877][DL][PROGR] BridgeDevice[Extended Color Light 3]: level 1
+[  89099877][DL][PROGR] BridgeDevice[Extended Color Light 3]: ONLINE
+[  89099878][ZCL][PROGR] UART state applied snapshot ep=4 dev=3 version=10 mask=000f values=01 01 50 8c
+[  89099879][ZCL][PROGR] UART v2 TX type=41 seq=33 dev=3 ep=4 bind=11
+[  89099899][ZCL][PROGR] UART v2 TX type=42 seq=12831 dev=0 ep=0 bind=0
+[  89104899][ZCL][PROGR] UART v2 TX type=42 seq=12832 dev=0 ep=0 bind=0
+[  89109899][ZCL][PROGR] UART v2 TX type=42 seq=12833 dev=0 ep=0 bind=0
+[  89114899][ZCL][PROGR] UART v2 TX type=42 seq=12834 dev=0 ep=0 bind=0
+[  89119899][ZCL][PROGR] UART v2 TX type=42 seq=12835 dev=0 ep=0 bind=0
+[  89124899][ZCL][PROGR] UART v2 TX type=42 seq=12836 dev=0 ep=0 bind=0
+[  89129899][ZCL][PROGR] UART v2 TX type=42 seq=12837 dev=0 ep=0 bind=0
+[  89134899][ZCL][PROGR] UART v2 TX type=42 seq=12838 dev=0 ep=0 bind=0
+[  89139899][ZCL][PROGR] UART v2 TX type=42 seq=12839 dev=0 ep=0 bind=0
+[  89144899][ZCL][PROGR] UART v2 TX type=42 seq=12840 dev=0 ep=0 bind=0
+[  89149899][ZCL][PROGR] UART v2 TX type=42 seq=12841 dev=0 ep=0 bind=0
+[  89154899][ZCL][PROGR] UART v2 TX type=42 seq=12842 dev=0 ep=0 bind=0
+[  89159899][ZCL][PROGR] UART v2 TX type=42 seq=12843 dev=0 ep=0 bind=0
+[  89164524][DL][PROGR] BridgeDevice[Extended Color Light 3]: ON
+[  89164524][DL][PROGR] BridgeDevice[Extended Color Light 3]: level 1
+[  89164524][DL][PROGR] BridgeDevice[Extended Color Light 3]: ONLINE
+[  89164525][ZCL][PROGR] UART state applied snapshot ep=4 dev=3 version=11 mask=000f values=01 01 50 8c
+[  89164526][ZCL][PROGR] UART v2 TX type=41 seq=34 dev=3 ep=4 bind=11
+[  89164900][ZCL][PROGR] UART v2 TX type=42 seq=12844 dev=0 ep=0 bind=0
+[  89169900][ZCL][PROGR] UART v2 TX type=42 seq=12845 dev=0 ep=0 bind=0
+[  89174900][ZCL][PROGR] UART v2 TX type=42 seq=12846 dev=0 ep=0 bind=0
+[  89179900][ZCL][PROGR] UART v2 TX type=42 seq=12847 dev=0 ep=0 bind=0
+[  89184900][ZCL][PROGR] UART v2 TX type=42 seq=12848 dev=0 ep=0 bind=0
+[  89188915][ZCL][ERROR] UART snapshot rejected status=8 ep=4 dev=3 version=11 expected=11
+[  89188916][ZCL][PROGR] UART v2 TX type=41 seq=35 dev=3 ep=4 bind=11
+[  89189900][ZCL][PROGR] UART v2 TX type=42 seq=12849 dev=0 ep=0 bind=0
+[  89194900][ZCL][PROGR] UART v2 TX type=42 seq=12850 dev=0 ep=0 bind=0
+Received RIO
+prefix FD6D:E9C9:593D:: lifetime 1800
+Added entry to route table
+[  89199900][ZCL][PROGR] UART v2 TX type=42 seq=12851 dev=0 ep=0 bind=0
+[  89204900][ZCL][PROGR] UART v2 TX type=42 seq=12852 dev=0 ep=0 bind=0
+[  89209900][ZCL][PROGR] UART v2 TX type=42 seq=12853 dev=0 ep=0 bind=0
+[  89214900][ZCL][PROGR] UART v2 TX type=42 seq=12854 dev=0 ep=0 bind=0
+[  89219900][ZCL][PROGR] UART v2 TX type=42 seq=12855 dev=0 ep=0 bind=0
+[  89224900][ZCL][PROGR] UART v2 TX type=42 seq=12856 dev=0 ep=0 bind=0
+[  89229900][ZCL][PROGR] UART v2 TX type=42 seq=12857 dev=0 ep=0 bind=0
+[  89234900][ZCL][PROGR] UART v2 TX type=42 seq=12858 dev=0 ep=0 bind=0
+[  89239900][ZCL][PROGR] UART v2 TX type=42 seq=12859 dev=0 ep=0 bind=0
+[  89244900][ZCL][PROGR] UART v2 TX type=42 seq=12860 dev=0 ep=0 bind=0
+[  89249900][ZCL][PROGR] UART v2 TX type=42 seq=12861 dev=0 ep=0 bind=0
+[  89254900][ZCL][PROGR] UART v2 TX type=42 seq=12862 dev=0 ep=0 bind=0
+[  89259900][ZCL][PROGR] UART v2 TX type=42 seq=12863 dev=0 ep=0 bind=0
+[  89264900][ZCL][PROGR] UART v2 TX type=42 seq=12864 dev=0 ep=0 bind=0
+[  89269900][ZCL][PROGR] UART v2 TX type=42 seq=12865 dev=0 ep=0 bind=0
+[  89274900][ZCL][PROGR] UART v2 TX type=42 seq=12866 dev=0 ep=0 bind=0
+[  89279900][ZCL][PROGR] UART v2 TX type=42 seq=12867 dev=0 ep=0 bind=0
+[  89284900][ZCL][PROGR] UART v2 TX type=42 seq=12868 dev=0 ep=0 bind=0
+[  89289900][ZCL][PROGR] UART v2 TX type=42 seq=12869 dev=0 ep=0 bind=0
+[  89294900][ZCL][PROGR] UART v2 TX type=42 seq=12870 dev=0 ep=0 bind=0
+[  89299900][ZCL][PROGR] UART v2 TX type=42 seq=12871 dev=0 ep=0 bind=0
+[  89304900][ZCL][PROGR] UART v2 TX type=42 seq=12872 dev=0 ep=0 bind=0
+[  89309900][ZCL][PROGR] UART v2 TX type=42 seq=12873 dev=0 ep=0 bind=0
+[  89312088][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  89312089][DL][PROGR] Removed dynamic device Extended Color Light 3 (uniqueId=bridge-uart-00000003) from dynamic endpoint 4 (index=1)
+[  89312089][DL][PROGR] BridgeDevice[Extended Color Light 3]: OFFLINE
+[  89312093][ZCL][PROGR] UART v2 TX type=39 seq=36 dev=3 ep=4 bind=11
+[  89312093][DL][PROGR] Attribute changed ep=4 cluster=0x00000039 attr=0x00000011
+[  89312094][DL][PROGR] Reachable callback ep=4
+[  89312094][ZCL][ERROR] ReachabledChanged: Failed to get Reachable value
+[  89312095][DMG][ERROR] Endpoint 4, Cluster 0x0000_0039 not found in IncreaseClusterDataVersion!
+[  89314900][ZCL][PROGR] UART v2 TX type=42 seq=12874 dev=0 ep=0 bind=0
+[  89314906][ZCL][PROGR] UART v2 TX type=32 seq=12875 dev=0 ep=0 bind=0
+[  89319900][ZCL][PROGR] UART v2 TX type=42 seq=12876 dev=0 ep=0 bind=0
