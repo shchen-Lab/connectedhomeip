@@ -57,17 +57,11 @@ namespace {
 #endif
 
 #if defined(BL616CL)
-#ifndef LIGHT_UART_TX_PIN
-#define LIGHT_UART_TX_PIN GPIO_PIN_6
-#endif
 #ifndef LIGHT_UART_RX_PIN
-#define LIGHT_UART_RX_PIN GPIO_PIN_7
+#define LIGHT_UART_RX_PIN GPIO_PIN_6
 #endif
-#ifndef LIGHT_UART_CTS_PIN
-#define LIGHT_UART_CTS_PIN GPIO_PIN_8
-#endif
-#ifndef LIGHT_UART_RTS_PIN
-#define LIGHT_UART_RTS_PIN GPIO_PIN_9
+#ifndef LIGHT_UART_TX_PIN
+#define LIGHT_UART_TX_PIN GPIO_PIN_8
 #endif
 #endif
 
@@ -142,8 +136,6 @@ void InitLightUartGpio(struct bflb_device_s * uart)
 
     bflb_gpio_uart_init(gpio, LIGHT_UART_TX_PIN, GPIO_UART_FUNC_UART0_TX + 4 * uart->idx);
     bflb_gpio_uart_init(gpio, LIGHT_UART_RX_PIN, GPIO_UART_FUNC_UART0_RX + 4 * uart->idx);
-    bflb_gpio_uart_init(gpio, LIGHT_UART_CTS_PIN, GPIO_UART_FUNC_UART0_CTS + 4 * uart->idx);
-    bflb_gpio_uart_init(gpio, LIGHT_UART_RTS_PIN, GPIO_UART_FUNC_UART0_RTS + 4 * uart->idx);
 #else
     board_uartx_gpio_init();
 #endif
@@ -152,9 +144,9 @@ void InitLightUartGpio(struct bflb_device_s * uart)
 void SendLightUartBootProbe()
 {
 #if LIGHT_UART_BOOT_PROBE
-    static const uint8_t kBootProbe[] = { 0x55, 0x55, 0x55, 0x55, '\r', '\n', 'L', 'I', 'G', 'H',  'T', '_',
+    static const uint8_t kBootProbe[] = { 0x55, 0x55, 0x55, 0x55, '\r', '\n', 'L', 'I', 'G', 'H', 'T', '_',
                                           'U',  'A',  'R',  'T',  '_',  'B',  'O', 'O', 'T', '\r', '\n' };
-    int ret                           = bflb_uart_put_block(sLightUart, const_cast<uint8_t *>(kBootProbe), sizeof(kBootProbe));
+    int ret = bflb_uart_put_block(sLightUart, const_cast<uint8_t *>(kBootProbe), sizeof(kBootProbe));
     ChipLogProgress(Zcl, "Light UART boot probe wrote %d/%u bytes", ret == 0 ? static_cast<int>(sizeof(kBootProbe)) : ret,
                     static_cast<unsigned>(sizeof(kBootProbe)));
 #endif
@@ -269,10 +261,9 @@ CHIP_ERROR InitLightUartPort()
     SendLightUartBootProbe();
 
 #if defined(BL616CL)
-    ChipLogProgress(Zcl, "Light UART initialized on %s baud=%u pins tx=%u rx=%u cts=%u rts=%u", LIGHT_UART_DEVICE_NAME,
+    ChipLogProgress(Zcl, "Light UART initialized on %s baud=%u pins tx=%u rx=%u", LIGHT_UART_DEVICE_NAME,
                     static_cast<unsigned>(LIGHT_UART_BAUDRATE), static_cast<unsigned>(LIGHT_UART_TX_PIN),
-                    static_cast<unsigned>(LIGHT_UART_RX_PIN), static_cast<unsigned>(LIGHT_UART_CTS_PIN),
-                    static_cast<unsigned>(LIGHT_UART_RTS_PIN));
+                    static_cast<unsigned>(LIGHT_UART_RX_PIN));
 #else
     ChipLogProgress(Zcl, "Light UART initialized on %s baud=%u", LIGHT_UART_DEVICE_NAME,
                     static_cast<unsigned>(LIGHT_UART_BAUDRATE));
