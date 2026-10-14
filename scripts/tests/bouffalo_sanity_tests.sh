@@ -14,45 +14,47 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# BL616DK Wi-Fi lighting —— python_testing 通用测试集一键执行脚本
+# Matter DUT —— python_testing 测试集一键执行脚本
 #
 # 用法:
-#   ./scripts/tests/bl616_sanity_tests.sh                    # 对已配网设备直接 CASE 直连测试(全部用例)
-#   ./scripts/tests/bl616_sanity_tests.sh --commission       # 先 BLE+Wi-Fi 配网再测试(需设备处于出厂/配网广播状态)
-#   ./scripts/tests/bl616_sanity_tests.sh TC_CC_2_1 TC_ACL_2_2        # 只跑指定用例(16个预设之一)
-#   ./scripts/tests/bl616_sanity_tests.sh TC_CADMIN_1_9               # 任意其他用例(src/python_testing/ 下存在的)
-#   ./scripts/tests/bl616_sanity_tests.sh "TC_CNET_4_3:--endpoint 0"  # 非预设用例附加参数
-#   ./scripts/tests/bl616_sanity_tests.sh --commission TC_DA_1_5      # 配网后只跑指定用例
-#   ./scripts/tests/bl616_sanity_tests.sh --help
+#   ./scripts/tests/bouffalo_sanity_tests.sh                    # 对已配网设备运行默认用例集
+#   PICS_FILE=/path/to/device.pics FIRMWARE_PATH=/path/to/app.bin ./scripts/tests/bouffalo_sanity_tests.sh TC_CC_2_1
+#   ./scripts/tests/bouffalo_sanity_tests.sh TC_CC_2_1 TC_ACL_2_2        # 只跑指定用例
+#   ./scripts/tests/bouffalo_sanity_tests.sh TC_CADMIN_1_9               # 任意其他用例(src/python_testing/ 下存在的)
+#   ./scripts/tests/bouffalo_sanity_tests.sh "TC_CNET_4_3:--endpoint 0"  # 非预设用例附加参数
+#
+# 配网 (--commission 会先配网再测试；不传时要求 DUT 已与 Python runner 配对):
+#   Wi-Fi:     BOUFFALO_TARGET=bl616dk WIFI_SSID=my-ap WIFI_PASSPHRASE=my-password ./scripts/tests/bouffalo_sanity_tests.sh --commission TC_CC_2_1
+#   Thread:    BOUFFALO_TARGET=bl704ldk THREAD_DATASET='hex:<dataset-hex>' ./scripts/tests/bouffalo_sanity_tests.sh --commission TC_DA_1_5
+#   Linux LAN: BOUFFALO_TARGET=linux-x64-light ./scripts/tests/bouffalo_sanity_tests.sh --commission TC_CC_2_1
+#   ./scripts/tests/bouffalo_sanity_tests.sh --help
 #
 # 依赖:
 #   - 一次性准备(已完成的机器可跳过):
 #       source scripts/activate.sh && ./scripts/build_python.sh -i out/python_env
 #   - 设备已被本框架配网(或使用 --commission 现场配网)
 #
-# ⚠️ 重要: ACE/OPCREDS 等测试会持久修改设备 ACL, 每轮测试前建议将设备恢复出厂
-#          (BL616DK: 长按 BOOT 键 GPIO2), 再用 --commission 重新配网, 否则可能
-#          出现批量 UnsupportedAccess 失败。
+# 注意: ACE/OPCREDS 等测试会持久修改设备 ACL; 是否恢复出厂及操作方式取决于所用 board。
 #
-# 退出码: 0=全部通过, 1=有失败
+# 退出码: 0=全部通过, 1=有失败或未执行用例
 
 set -uo pipefail
 
 CHIP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$CHIP_ROOT/scripts/tests/bouffalo_test_common.sh"
+bouffalo_parse_args "$@"
+
 PYENV="$CHIP_ROOT/out/python_env"
+bouffalo_init_common_config || exit $?
 
 # ---- 可按环境修改的参数 ----
-STORAGE_PATH="${STORAGE_PATH:-/tmp/admin_storage.json}"
-# 测试记录归档到 SDK 内, 按日期保存(认证留档用): test_results/bl616_sanity/<日期>_<时间>/
+STORAGE_PATH="${STORAGE_PATH:-$CHIP_ROOT/.tmp/bouffalo/$BOUFFALO_TARGET/python_storage.json}"
+# 测试记录归档到 SDK 内, 按日期保存(认证留档用): test_results/bouffalo_sanity/<日期>_<时间>/
 RESULTS_ROOT="${RESULTS_ROOT:-$CHIP_ROOT/test_results}"
-LOG_DIR="${LOG_DIR:-$RESULTS_ROOT/bl616_sanity/$(date +%Y%m%d_%H%M%S)}"
-DISCRIMINATOR="${DISCRIMINATOR:-3840}"
-PASSCODE="${PASSCODE:-20202021}"
-WIFI_SSID="${WIFI_SSID:-BF-OTA-AP}"
-WIFI_PASSPHRASE="${WIFI_PASSPHRASE:-12345678}"
+LOG_DIR="${LOG_DIR:-$RESULTS_ROOT/bouffalo_sanity/$(date +%Y%m%d_%H%M%S)}"
 # ---------------------------
 
-# 16 个通过的用例: 名称 | 额外参数
+# 默认快捷用例: 名称 | 额外参数
 #   第一梯队(通用)      : DeviceBasicComposition, CGEN_2_1, G_2_2(ep1), IDM_1_2,
 #                         IDM_2_2(ep1), IDM_4_2(ep1), DGSW_2_1(ep0), DGGEN_2_4
 #   lighting 核心       : CC_2_1(ep1), CC_2_2(ep1), LVL_2_3(ep1)
@@ -76,16 +78,6 @@ TESTS=(
     "TC_ACE_1_3|"
     "TC_ACL_2_2|"
 )
-
-COMMISSION=0
-SELECTED=()
-for arg in "$@"; do
-    case "$arg" in
-        --commission) COMMISSION=1 ;;
-        --help|-h) awk '/^# 用法:/{f=1} f&&/^# 退出码/{print;exit} f{print}' "$0"; exit 0 ;;
-        *) SELECTED+=("$arg") ;;
-    esac
-done
 
 # 支持只跑指定用例: 传入用例名(可省略 TC_ 前缀)。
 #   - 名字在 TESTS 列表内 -> 过滤出该用例(带预设的 endpoint 等参数)
@@ -128,22 +120,33 @@ fi
 # shellcheck disable=SC1091
 source "$PYENV/bin/activate"
 echo "[env] python: $(which python3)"
+[[ -f "$PICS_FILE" ]] || { echo "[error] PICS 不存在: $PICS_FILE"; exit 1; }
+[[ -z "$FIRMWARE_PATH" || -f "$FIRMWARE_PATH" ]] || { echo "[error] 固件文件不存在: $FIRMWARE_PATH"; exit 1; }
 
 mkdir -p "$LOG_DIR"
+mkdir -p "$(dirname "$STORAGE_PATH")"
+echo "[env] target: $BOUFFALO_TARGET (transport=$COMMISSION_TRANSPORT)"
+echo "[env] PICS: $PICS_FILE"
+echo "[env] storage: $STORAGE_PATH"
 echo "[env] logs: $LOG_DIR"
 
 # ---- 可选: 现场配网(BLE 扫描偶发超时, 自动重试最多 3 次) ----
 if [[ $COMMISSION -eq 1 ]]; then
-    # 配网前清掉旧 storage, 避免残留 fabric 信息
-    rm -f "$STORAGE_PATH"
-    echo "[commission] BLE+Wi-Fi 配网: $WIFI_SSID (discriminator=$DISCRIMINATOR)"
+    case "$COMMISSION_TRANSPORT" in
+        wifi) COMMISSION_ARGS=(--commissioning-method ble-wifi --wifi-ssid "$WIFI_SSID" --wifi-passphrase "$WIFI_PASSPHRASE") ;;
+        thread)
+            [[ -n "$THREAD_DATASET" ]] || { echo "[error] Thread 配网需要设置 THREAD_DATASET"; exit 2; }
+            COMMISSION_ARGS=(--commissioning-method ble-thread --thread-dataset-hex "${THREAD_DATASET#hex:}")
+            ;;
+        ethernet) COMMISSION_ARGS=(--commissioning-method on-network) ;;
+    esac
+    echo "[commission] $COMMISSION_TRANSPORT 配网 (discriminator=$DISCRIMINATOR)"
     ok=0
     for attempt in 1 2 3; do
         echo "[commission] 尝试 $attempt/3 ..."
         python3 "$CHIP_ROOT/src/python_testing/hello_test.py" \
-            --commissioning-method ble-wifi \
-            --discriminator "$DISCRIMINATOR" --passcode "$PASSCODE" \
-            --wifi-ssid "$WIFI_SSID" --wifi-passphrase "$WIFI_PASSPHRASE" \
+            "${COMMISSION_ARGS[@]}" \
+            --discriminator "$DISCRIMINATOR" --passcode "$PASSCODE" --dut-node-id "$NODE_ID" \
             --storage-path "$STORAGE_PATH" > "$LOG_DIR/commission.log" 2>&1
         if [[ $? -eq 0 ]] && grep -aq "Test results: Error 0" "$LOG_DIR/commission.log"; then
             ok=1; break
@@ -155,7 +158,7 @@ if [[ $COMMISSION -eq 1 ]]; then
 fi
 
 # ---- 跑测试 ----
-pass=0; fail=0; declare -a failed=()
+pass=0; fail=0; skip=0; declare -a failed=(); declare -a skipped=()
 printf "%-28s %-8s %s\n" "TEST" "RESULT" "DETAIL"
 printf "%-28s %-8s %s\n" "----" "------" "------"
 
@@ -164,14 +167,20 @@ for entry in "${TESTS[@]}"; do
     extra="${entry#*|}"
     log="$LOG_DIR/$name.log"
 
+    extra_args=()
+    [[ -z "$extra" ]] || read -r -a extra_args <<< "$extra"
     timeout "${TEST_TIMEOUT:-300}" python3 "$CHIP_ROOT/src/python_testing/$name.py" \
-        --storage-path "$STORAGE_PATH" $extra > "$log" 2>&1
+        --storage-path "$STORAGE_PATH" --PICS "$PICS_FILE" --dut-node-id "$NODE_ID" \
+        "${extra_args[@]}" > "$log" 2>&1
     rc=$?
 
     summary=$(grep -aE "Summary for test class" "$log" | tail -1 | sed 's/.*Summary for test class //')
-    if [[ $rc -eq 0 && "$summary" == *"Error 0"* && "$summary" == *"Failed 0"* ]]; then
+    if [[ $rc -eq 0 && "$summary" == *"Error 0"* && "$summary" == *"Failed 0"* && "$summary" =~ Passed[[:space:]:]+[1-9][0-9]* ]]; then
         printf "%-28s %-8s %s\n" "$name" "PASS" "${summary:-ok}"
         pass=$((pass+1))
+    elif [[ $rc -eq 0 && "$summary" == *"Error 0"* && "$summary" == *"Failed 0"* && "$summary" =~ Skipped[[:space:]:]+[1-9][0-9]* ]]; then
+        printf "%-28s %-8s %s\n" "$name" "SKIP" "${summary:-no tests executed}"
+        skip=$((skip+1)); skipped+=("$name")
     else
         printf "%-28s %-8s %s\n" "$name" "FAIL" "${summary:-exit=$rc}"
         fail=$((fail+1)); failed+=("$name")
@@ -180,24 +189,36 @@ done
 
 echo
 echo "=========================================="
-echo " 总计: $((pass+fail))  通过: $pass  失败: $fail"
-[[ $fail -gt 0 ]] && status=FAILED || status=PASSED
+echo " 总计: $((pass+fail+skip))  通过: $pass  失败: $fail  跳过: $skip"
+if [[ $fail -gt 0 ]]; then status=FAILED; elif [[ $skip -gt 0 ]]; then status=INCOMPLETE; else status=PASSED; fi
 # 生成汇总报告(认证留档)
 {
-    echo "BL616DK python_testing 汇总报告"
+    echo "Matter python_testing 汇总报告"
+    echo "目标: $BOUFFALO_TARGET"
+    echo "配网传输: $COMMISSION_TRANSPORT"
     echo "日期: $(date '+%Y-%m-%d %H:%M:%S')"
-    echo "结果: $status (通过 $pass / 失败 $fail / 共 $((pass+fail)))"
-    echo "固件: $(cd $CHIP_ROOT && git rev-parse --short HEAD 2>/dev/null || echo 'n/a') / sha256 $(sha256sum $CHIP_ROOT/examples/lighting-app/bouffalolab/build/build_out/chip-bflb-lighting-example_bl616.bin 2>/dev/null | cut -c1-16 || echo 'unknown')"
+    echo "结果: $status (通过 $pass / 失败 $fail / 跳过 $skip / 共 $((pass+fail+skip)))"
+    echo "SDK source commit: $(cd "$CHIP_ROOT" && git rev-parse --short HEAD 2>/dev/null || echo 'n/a')"
+    echo "PICS: $PICS_FILE"
+    echo "storage: $STORAGE_PATH"
+    if [[ -n "$FIRMWARE_PATH" && -f "$FIRMWARE_PATH" ]]; then
+        echo "固件文件: $FIRMWARE_PATH"
+        echo "固件 SHA-256: $(sha256sum "$FIRMWARE_PATH" | awk '{print $1}')"
+    else
+        echo "固件文件: ${FIRMWARE_PATH:-未指定}"
+        echo "固件 SHA-256: unknown"
+    fi
     echo
     printf "%-28s %-8s %s\n" "TEST" "RESULT" "DETAIL"
     printf "%-28s %-8s %s\n" "----" "------" "------"
     for entry in "${TESTS[@]}"; do
         name="${entry%%|*}"
-        if [[ " ${failed[*]} " == *" $name "* ]]; then r=FAIL; else r=PASS; fi
+        if [[ " ${failed[*]} " == *" $name "* ]]; then r=FAIL; elif [[ " ${skipped[*]} " == *" $name "* ]]; then r=SKIP; else r=PASS; fi
         summary=$(grep -aE "Summary for test class" "$LOG_DIR/$name.log" 2>/dev/null | tail -1 | sed 's/.*Summary for test class //')
         printf "%-28s %-8s %s\n" "$name" "$r" "${summary:-}"
     done
 } > "$LOG_DIR/summary.txt"
 echo " 报告: $LOG_DIR/summary.txt"
 [[ $fail -gt 0 ]] && { echo " 失败用例: ${failed[*]}"; exit 1; }
+[[ $skip -gt 0 ]] && { echo " 未执行用例: ${skipped[*]}"; exit 1; }
 echo " 全部通过 ✅"
