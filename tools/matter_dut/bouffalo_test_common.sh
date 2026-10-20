@@ -16,11 +16,13 @@
 
 bouffalo_parse_args() {
     COMMISSION=0
+    LIST_ONLY=0
     SELECTED=()
 
     for arg in "$@"; do
         case "$arg" in
             --commission) COMMISSION=1 ;;
+            --list) LIST_ONLY=1 ;;
             --help|-h)
                 awk '/^# 用法:/{f=1} f&&/^# 退出码/{print;exit} f{print}' "$0"
                 exit 0

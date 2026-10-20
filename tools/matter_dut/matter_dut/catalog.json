@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {
+      "id": "python.root-node-basic-composition",
+      "backend": "python",
+      "script": "src/python_testing/TC_DeviceBasicComposition.py",
+      "dut_role": "server",
+      "scope": "node",
+      "requirements": [
+        {"scope": "node", "cluster_id": "0x001d", "role": "server", "device_type_ids": ["0x0016"]},
+        {"scope": "node", "cluster_id": "0x0028", "role": "server", "device_type_ids": ["0x0016"]},
+        {"scope": "node", "cluster_id": "0x001f", "role": "server", "device_type_ids": ["0x0016"]},
+        {"scope": "node", "cluster_id": "0x003f", "role": "server", "device_type_ids": ["0x0016"]},
+        {"scope": "node", "cluster_id": "0x0030", "role": "server", "device_type_ids": ["0x0016"]},
+        {"scope": "node", "cluster_id": "0x003c", "role": "server", "device_type_ids": ["0x0016"]},
+        {"scope": "node", "cluster_id": "0x003e", "role": "server", "device_type_ids": ["0x0016"]},
+        {"scope": "node", "cluster_id": "0x0033", "role": "server", "device_type_ids": ["0x0016"]}
+      ],
+      "suite": "smoke",
+      "effects": ["read-only"],
+      "fixtures": [],
+      "timeout_seconds": 300,
+      "arguments": ["--tests", "test_TC_SM_1_1"]
+    }
+  ]
+}
